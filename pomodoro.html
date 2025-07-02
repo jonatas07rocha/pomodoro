@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foco Total - Pomodoro</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Favicon Emoji -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍅</text></svg>">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            background-image: radial-gradient(circle at center, #1a202c 0%, #000000 70%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .device-shell {
+            background-color: #1F2937;
+            border-radius: 2.5rem; /* Bordas mais arredondadas para o corpo do aparelho */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            color: #D1D5DB;
+            width: 100%;
+            max-width: 390px;
+        }
+
+        .timer-panel {
+            background-color: #111827; 
+            border-radius: 1.25rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.5); 
+        }
+
+        #progress-ring {
+            transition: stroke-dashoffset 1s linear, stroke 0.5s ease, filter 0.5s ease;
+        }
+
+        .task-item {
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.3s ease;
+        }
+        .task-item.selected {
+            background-color: #374151;
+            border-color: #3B82F6;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+        }
+        
+        #timer-display {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #1F2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid #3B82F6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            color: white;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+            width: 90%;
+            max-width: 420px;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body>
+    <div id="device-shell" class="device-shell">
+        <header class="text-center">
+            <h1 class="text-2xl font-bold text-white">🍅 Foco Total</h1>
+            <p id="mode-display" class="font-semibold text-lg transition-all">Pronto para começar?</p>
+        </header>
+
+        <div class="timer-panel mt-4">
+            <div class="relative w-56 h-56 mx-auto">
+                <svg class="w-full h-full" viewBox="0 0 100 100">
+                    <circle class="text-gray-800" stroke-width="7" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                    <circle id="progress-ring" class="text-blue-500" stroke-width="7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: center;" />
+                </svg>
+                <div id="timer-display" class="absolute inset-0 flex items-center justify-center text-5xl font-bold text-white">
+                    25:00
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mb-2">
+            <p class="text-gray-400 text-sm">Foco em:</p>
+            <p id="current-task-display" class="text-white font-semibold text-base truncate">Nenhuma tarefa selecionada</p>
+            <div id="pomodoro-cycles" class="flex justify-center space-x-1 mt-1"></div>
+        </div>
+
+        <div class="flex-grow flex flex-col min-h-[150px] mb-4">
+            <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas</h2>
+            <div id="task-list" class="space-y-2 flex-grow overflow-y-auto pr-2"></div>
+            <div class="flex mt-3 space-x-2">
+                <input type="text" id="new-task-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
+                <button id="add-task-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm flex-shrink-0">Add</button>
+            </div>
+        </div>
+
+        <div class="space-y-2 mt-auto">
+            <button id="start-pause-btn" class="w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg">
+                Iniciar Foco
+            </button>
+            <div class="flex space-x-2">
+                <button id="reset-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm">
+                    Resetar
+                </button>
+                <button id="settings-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm">
+                    Ajustes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Alerta -->
+    <div id="alert-modal-overlay" class="modal-overlay">
+        <div class="modal-content text-center">
+            <p id="alert-modal-message" class="mb-4"></p>
+            <button id="alert-modal-close-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">OK</button>
+        </div>
+    </div>
+
+    <!-- Modal de Configurações -->
+    <div id="settings-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações & Ajuda</h2>
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-blue-400 mb-3">Duração (minutos)</h3>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                        <label for="focus-duration" class="block text-xs font-medium text-gray-300">Foco</label>
+                        <input type="number" id="focus-duration" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="25">
+                    </div>
+                    <div>
+                        <label for="short-break-duration" class="block text-xs font-medium text-gray-300">Pausa Curta</label>
+                        <input type="number" id="short-break-duration" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="5">
+                    </div>
+                    <div>
+                        <label for="long-break-duration" class="block text-xs font-medium text-gray-300">Pausa Longa</label>
+                        <input type="number" id="long-break-duration" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="15">
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4">
+                 <h3 class="text-base font-semibold text-blue-400 mb-3">Outros Ajustes</h3>
+                 <div>
+                    <label for="long-break-interval" class="block text-xs font-medium text-gray-300">Pomodoros para pausa longa</label>
+                    <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
+                 </div>
+            </div>
+            <div class="flex-grow">
+                <h3 class="text-base font-semibold text-blue-400 mb-3">Guia Rápido</h3>
+                <ul class="list-disc list-inside text-gray-300 space-y-1 text-xs">
+                    <li>Adicione e selecione uma tarefa.</li>
+                    <li>Inicie o temporizador de foco.</li>
+                    <li>Trabalhe na tarefa sem interrupções.</li>
+                    <li>Faça uma pausa curta ao final do ciclo.</li>
+                    <li>Após 4 ciclos, faça uma pausa longa.</li>
+                </ul>
+            </div>
+            <button id="settings-save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mt-6 transition-colors text-sm">
+                Salvar e Fechar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const deviceShell = document.getElementById('device-shell');
+            const timerDisplay = document.getElementById('timer-display');
+            const modeDisplay = document.getElementById('mode-display');
+            const startPauseBtn = document.getElementById('start-pause-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+            const progressRing = document.getElementById('progress-ring');
+            const newTaskInput = document.getElementById('new-task-input');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const taskListEl = document.getElementById('task-list');
+            const currentTaskDisplay = document.getElementById('current-task-display');
+            const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
+            
+            const alertModalOverlay = document.getElementById('alert-modal-overlay');
+            const alertModalMessage = document.getElementById('alert-modal-message');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+            const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+            const settingsSaveBtn = document.getElementById('settings-save-btn');
+            
+            const focusDurationInput = document.getElementById('focus-duration');
+            const shortBreakDurationInput = document.getElementById('short-break-duration');
+            const longBreakDurationInput = document.getElementById('long-break-duration');
+            const longBreakIntervalInput = document.getElementById('long-break-interval');
+
+            let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
+            let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
+            let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
+
+            let audioContext; // Declarado aqui para ser acessível globalmente no script
+
+            // Função para inicializar o AudioContext, chamada pela primeira interação do usuário
+            const initAudioContext = () => {
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.error("Web Audio API is not supported in this browser.");
+                    }
+                }
+            };
+            
+            const playSound = () => {
+                if (!audioContext) return; // Não tenta tocar se o contexto não foi criado
+                
+                // Garante que o contexto esteja ativo
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                oscillator.start(audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 1);
+                oscillator.stop(audioContext.currentTime + 1);
+            };
+
+            const showModal = (modalOverlay, message) => {
+                if (message) {
+                    const messageEl = modalOverlay.querySelector('p');
+                    if(messageEl) messageEl.textContent = message;
+                }
+                modalOverlay.classList.add('visible');
+            };
+            const hideModal = (modalOverlay) => modalOverlay.classList.remove('visible');
+
+            const startTimer = () => {
+                initAudioContext(); // Garante que o áudio está pronto no primeiro clique
+                if (isRunning) return;
+                if (!selectedTaskId && mode === 'focus') {
+                    showModal(alertModalOverlay, 'Por favor, selecione uma tarefa para iniciar o foco.');
+                    return;
+                }
+                isRunning = true;
+                timer = setInterval(updateTimer, 1000);
+                updateUI();
+            };
+
+            const pauseTimer = () => {
+                if (!isRunning) return;
+                isRunning = false;
+                clearInterval(timer);
+                updateUI();
+            };
+
+            const updateTimer = () => {
+                if (timeRemaining > 0) timeRemaining--;
+                updateUI();
+                if (timeRemaining <= 0) {
+                    clearInterval(timer);
+                    playSound();
+                    switchMode();
+                }
+            };
+
+            const switchMode = () => {
+                isRunning = false;
+                if (mode === 'focus') {
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    if (task) task.pomodoros++;
+                    pomodorosCompleted++;
+                    renderTasks();
+                    mode = (pomodorosCompleted % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
+                } else {
+                    mode = 'focus';
+                }
+                resetTimer();
+            };
+
+            const resetTimer = (forceMode = null) => {
+                clearInterval(timer);
+                isRunning = false;
+                mode = forceMode || mode;
+                timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
+                totalTime = timeRemaining;
+                updateUI();
+            };
+
+            const updateUI = () => {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                document.title = `${timerDisplay.textContent} - Foco Total`;
+
+                let modeColor, modeShadowColor;
+                switch (mode) {
+                    case 'focus':
+                        modeDisplay.textContent = 'Hora de Focar!';
+                        modeColor = 'blue';
+                        modeShadowColor = 'rgba(59, 130, 246, 0.7)';
+                        break;
+                    case 'shortBreak':
+                        modeDisplay.textContent = 'Pausa Curta';
+                        modeColor = 'green';
+                        modeShadowColor = 'rgba(34, 197, 94, 0.7)';
+                        break;
+                    case 'longBreak':
+                        modeDisplay.textContent = 'Pausa Longa';
+                        modeColor = 'indigo';
+                        modeShadowColor = 'rgba(99, 102, 241, 0.7)';
+                        break;
+                }
+
+                progressRing.setAttribute('class', `text-${modeColor}-500`);
+                modeDisplay.setAttribute('class', `font-semibold text-lg transition-all text-${modeColor}-400`);
+                modeDisplay.style.textShadow = `0 0 8px ${modeShadowColor}`;
+                progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
+                startPauseBtn.style.boxShadow = `0 0 15px ${modeShadowColor}`;
+                startPauseBtn.setAttribute('class', `w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg bg-${modeColor}-600 hover:bg-${modeColor}-700`);
+                startPauseBtn.textContent = isRunning ? 'Pausar' : (mode === 'focus' ? 'Iniciar Foco' : 'Iniciar Pausa');
+
+                const circumference = 2 * Math.PI * 45;
+                const offset = circumference - (timeRemaining / totalTime) * circumference;
+                progressRing.style.strokeDasharray = circumference;
+                progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
+            };
+            
+            const renderTasks = () => {
+                taskListEl.innerHTML = tasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione sua primeira tarefa!</p>' : '';
+                tasks.forEach(task => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `task-item flex justify-between items-center bg-gray-900 p-2 rounded-lg border-2 border-transparent cursor-pointer ${task.id === selectedTaskId ? 'selected' : ''}`;
+                    taskEl.dataset.id = task.id;
+                    taskEl.innerHTML = `
+                        <span class="truncate pr-2 text-sm">${task.name}</span>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <span class="text-xs text-gray-400 font-bold">🍅 ${task.pomodoros}</span>
+                            <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 text-lg transition-colors">&times;</button>
+                        </div>
+                    `;
+                    taskEl.onclick = () => selectTask(task.id);
+                    taskListEl.appendChild(taskEl);
+                });
+                updateCurrentTaskDisplay();
+                saveState();
+            };
+
+            const addTask = () => {
+                const taskName = newTaskInput.value.trim();
+                if (taskName) {
+                    const newTask = { id: Date.now(), name: taskName, pomodoros: 0 };
+                    tasks.push(newTask);
+                    newTaskInput.value = '';
+                    renderTasks();
+                    if (!selectedTaskId) selectTask(newTask.id);
+                }
+            };
+
+            const deleteTask = (id) => {
+                tasks = tasks.filter(task => task.id !== id);
+                if (selectedTaskId === id) {
+                    selectedTaskId = tasks.length > 0 ? tasks[0].id : null;
+                    if (!isRunning) resetTimer('focus');
+                }
+                renderTasks();
+            };
+
+            const selectTask = (id) => {
+                selectedTaskId = id;
+                if (!isRunning && mode !== 'focus') resetTimer('focus');
+                else renderTasks();
+            };
+            
+            const updateCurrentTaskDisplay = () => {
+                const task = tasks.find(t => t.id === selectedTaskId);
+                currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
+                pomodoroCyclesEl.innerHTML = '';
+                if (!settings.longBreakInterval) return;
+                const cyclesToShow = pomodorosCompleted % settings.longBreakInterval;
+                for(let i = 0; i < settings.longBreakInterval; i++) {
+                    const cycleEl = document.createElement('span');
+                    cycleEl.textContent = i < cyclesToShow ? '🍅' : '⚪️';
+                    cycleEl.className = 'text-lg';
+                    pomodoroCyclesEl.appendChild(cycleEl);
+                }
+            };
+
+            const saveState = () => {
+                localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
+                localStorage.setItem('pomodoroTasks', JSON.stringify(tasks));
+                localStorage.setItem('pomodoroSelectedTaskId', JSON.stringify(selectedTaskId));
+                localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
+            };
+
+            const loadState = () => {
+                settings = { ...settings, ...JSON.parse(localStorage.getItem('pomodoroSettings')) };
+                focusDurationInput.value = settings.focusDuration;
+                shortBreakDurationInput.value = settings.shortBreakDuration;
+                longBreakDurationInput.value = settings.longBreakDuration;
+                longBreakIntervalInput.value = settings.longBreakInterval;
+
+                tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
+                selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
+                selectedTaskId = (selectedTaskId && tasks.find(t => t.id === selectedTaskId)) ? selectedTaskId : (tasks.length > 0 ? tasks[0].id : null);
+                pomodorosCompleted = JSON.parse(localStorage.getItem('pomodoroCompletedCount')) || 0;
+            };
+
+            startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
+            resetBtn.addEventListener('click', () => resetTimer(mode));
+            settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
+            settingsSaveBtn.addEventListener('click', () => {
+                settings.focusDuration = parseInt(focusDurationInput.value) || 25;
+                settings.shortBreakDuration = parseInt(shortBreakDurationInput.value) || 5;
+                settings.longBreakDuration = parseInt(longBreakDurationInput.value) || 15;
+                settings.longBreakInterval = parseInt(longBreakIntervalInput.value) || 4;
+                saveState();
+                if (!isRunning) resetTimer(mode);
+                hideModal(settingsModalOverlay);
+            });
+            addTaskBtn.addEventListener('click', addTask);
+            newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
+            alertModalCloseBtn.addEventListener('click', () => hideModal(alertModalOverlay));
+            [alertModalOverlay, settingsModalOverlay].forEach(overlay => {
+                overlay.addEventListener('click', (e) => { if (e.target === overlay) hideModal(overlay); });
+            });
+            taskListEl.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    e.stopPropagation();
+                    deleteTask(parseInt(e.target.dataset.deleteId));
+                }
+            });
+
+            loadState();
+            renderTasks();
+            resetTimer('focus');
+        });
+    </script>
+</body>
+</html>
