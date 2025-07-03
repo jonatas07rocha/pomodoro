@@ -254,16 +254,30 @@
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-                oscillator.start(audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 1);
-                oscillator.stop(audioContext.currentTime + 1);
+                
+                // Cria uma sequência de bipes para um alarme mais perceptível
+                const now = audioContext.currentTime;
+                const fundamental = 440; // Nota Lá (A4)
+                const duration = 0.1;    // Duração de cada bipe
+                const gap = 0.15;        // Espaço entre os bipes
+
+                for (let i = 0; i < 3; i++) {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.type = 'triangle'; // Um tom um pouco mais suave que a onda senoidal
+                    // Alterna o tom para criar um efeito de alarme
+                    oscillator.frequency.setValueAtTime(fundamental * (i % 2 === 0 ? 1.5 : 2), now + i * gap);
+                    gainNode.gain.setValueAtTime(0.15, now + i * gap); // Volume um pouco mais baixo
+                    
+                    // Diminui o volume no final do bipe
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + i * gap + duration);
+
+                    oscillator.start(now + i * gap);
+                    oscillator.stop(now + i * gap + duration);
+                }
             };
 
             const showModal = (modalOverlay, message) => {
