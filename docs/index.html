@@ -25,7 +25,7 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        
+       
         .device-shell {
             background-color: #1F2937;
             border-radius: 2.5rem;
@@ -51,7 +51,7 @@
         }
 
         .task-item {
-            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.3s ease, opacity 0.3s;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.3s ease, opacity 0.3s, transform 0.3s ease;
         }
         .task-item.selected {
             background-color: #374151;
@@ -64,7 +64,7 @@
         .task-item.completed .task-name {
             text-decoration: line-through;
         }
-        
+       
         #timer-display {
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
@@ -155,6 +155,9 @@
                 <button id="reset-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm">
                     Resetar
                 </button>
+                 <button id="share-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar
+                </button>
                 <button id="settings-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm">
                     Ajustes
                 </button>
@@ -192,11 +195,11 @@
                 </div>
             </div>
             <div class="mb-4">
-                 <h3 class="text-base font-semibold text-blue-400 mb-3">Outros Ajustes</h3>
-                 <div>
+               <h3 class="text-base font-semibold text-blue-400 mb-3">Outros Ajustes</h3>
+               <div>
                     <label for="long-break-interval" class="block text-xs font-medium text-gray-300">Pomodoros para pausa longa</label>
                     <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
-                 </div>
+               </div>
             </div>
             <div class="flex-grow">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Guia Rápido</h3>
@@ -221,19 +224,20 @@
             const startPauseBtn = document.getElementById('start-pause-btn');
             const resetBtn = document.getElementById('reset-btn');
             const settingsBtn = document.getElementById('settings-btn');
+            const shareBtn = document.getElementById('share-btn'); // Botão de compartilhar
             const progressRing = document.getElementById('progress-ring');
             const newTaskInput = document.getElementById('new-task-input');
             const addTaskBtn = document.getElementById('add-task-btn');
             const taskListEl = document.getElementById('task-list');
             const currentTaskDisplay = document.getElementById('current-task-display');
             const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
-            
+           
             const alertModalOverlay = document.getElementById('alert-modal-overlay');
             const alertModalMessage = document.getElementById('alert-modal-message');
             const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
             const settingsModalOverlay = document.getElementById('settings-modal-overlay');
             const settingsSaveBtn = document.getElementById('settings-save-btn');
-            
+           
             const focusDurationInput = document.getElementById('focus-duration');
             const shortBreakDurationInput = document.getElementById('short-break-duration');
             const longBreakDurationInput = document.getElementById('long-break-duration');
@@ -254,17 +258,17 @@
                     }
                 }
             };
-            
+           
             const playSound = () => {
                 if (!audioContext) return; 
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
-                
+               
                 const now = audioContext.currentTime;
                 const fundamental = 440; 
-                const duration = 0.1;    
-                const gap = 0.15;        
+                const duration = 0.1;   
+                const gap = 0.15;       
 
                 for (let i = 0; i < 3; i++) {
                     const oscillator = audioContext.createOscillator();
@@ -275,7 +279,7 @@
                     oscillator.type = 'triangle';
                     oscillator.frequency.setValueAtTime(fundamental * (i % 2 === 0 ? 1.5 : 2), now + i * gap);
                     gainNode.gain.setValueAtTime(0.15, now + i * gap);
-                    
+                   
                     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + i * gap + duration);
 
                     oscillator.start(now + i * gap);
@@ -379,12 +383,12 @@
                 const offset = circumference - (timeRemaining / totalTime) * circumference;
                 progressRing.style.strokeDasharray = circumference;
                 progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
-                
+               
                 lucide.createIcons();
             };
-            
+           
             const renderTasks = () => {
-                // Ordena as tarefas: incompletas primeiro, depois completas
+                // NOVO: Ordena as tarefas, movendo as concluídas para o final
                 tasks.sort((a, b) => a.completed - b.completed);
 
                 taskListEl.innerHTML = tasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione sua primeira tarefa!</p>' : '';
@@ -392,12 +396,12 @@
                     const taskEl = document.createElement('div');
                     const isSelected = task.id === selectedTaskId;
                     const isCompleted = task.completed;
-                    
+                   
                     taskEl.className = `task-item flex justify-between items-center bg-gray-900 p-2 rounded-lg border-2 border-transparent cursor-pointer ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`;
                     taskEl.dataset.id = task.id;
 
                     const checkboxIcon = isCompleted ? 'check-square' : 'square';
-                    
+                   
                     taskEl.innerHTML = `
                         <div class="flex items-center flex-grow min-w-0">
                             <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-2 flex-shrink-0"><i data-lucide="${checkboxIcon}" class="w-5 h-5"></i></button>
@@ -408,7 +412,7 @@
                             <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     `;
-                    
+                   
                     // Adiciona o listener de clique para selecionar a tarefa (se não estiver concluída)
                     taskEl.addEventListener('click', (e) => {
                         if (!e.target.closest('.complete-btn') && !e.target.closest('.delete-btn')) {
@@ -426,19 +430,21 @@
             const addTask = () => {
                 const taskName = newTaskInput.value.trim();
                 if (taskName) {
-                    // Adiciona a propriedade 'completed'
                     const newTask = { id: Date.now(), name: taskName, pomodoros: 0, completed: false };
                     tasks.push(newTask);
                     newTaskInput.value = '';
                     renderTasks();
-                    if (!selectedTaskId) selectTask(newTask.id);
+                    if (!selectedTaskId || tasks.find(t => t.id === selectedTaskId)?.completed) {
+                       selectTask(newTask.id);
+                    }
                 }
             };
 
             const deleteTask = (id) => {
                 tasks = tasks.filter(task => task.id !== id);
                 if (selectedTaskId === id) {
-                    selectedTaskId = tasks.length > 0 ? tasks[0].id : null;
+                    const firstIncompleteTask = tasks.find(t => !t.completed);
+                    selectedTaskId = firstIncompleteTask ? firstIncompleteTask.id : null;
                     if (!isRunning) resetTimer('focus');
                 }
                 renderTasks();
@@ -448,9 +454,10 @@
                 const task = tasks.find(t => t.id === id);
                 if (task) {
                     task.completed = !task.completed;
-                    // Se a tarefa concluída era a selecionada, deseleciona
+                    // Se a tarefa concluída era a selecionada, deseleciona e procura a próxima incompleta
                     if (task.completed && selectedTaskId === id) {
-                        selectedTaskId = null;
+                        const firstIncompleteTask = tasks.find(t => !t.completed);
+                        selectedTaskId = firstIncompleteTask ? firstIncompleteTask.id : null;
                         if(isRunning && mode === 'focus') {
                             pauseTimer();
                         }
@@ -471,7 +478,7 @@
                     }
                 }
             };
-            
+           
             const updateCurrentTaskDisplay = () => {
                 const task = tasks.find(t => t.id === selectedTaskId);
                 currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
@@ -501,15 +508,26 @@
 
                 tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
                 selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
-                selectedTaskId = (selectedTaskId && tasks.find(t => t.id === selectedTaskId)) ? selectedTaskId : null;
-                // Garante que uma tarefa concluída não seja carregada como selecionada
-                if (selectedTaskId && tasks.find(t => t.id === selectedTaskId)?.completed) {
-                    selectedTaskId = null;
+                
+                // Garante que uma tarefa válida e não concluída seja carregada como selecionada
+                if (selectedTaskId) {
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    if (!task || task.completed) {
+                        selectedTaskId = null;
+                    }
+                }
+                // Se nenhuma tarefa estiver selecionada, seleciona a primeira incompleta
+                if (!selectedTaskId) {
+                    const firstIncompleteTask = tasks.find(t => !t.completed);
+                    if (firstIncompleteTask) {
+                        selectedTaskId = firstIncompleteTask.id;
+                    }
                 }
 
                 pomodorosCompleted = JSON.parse(localStorage.getItem('pomodoroCompletedCount')) || 0;
             };
 
+            // --- Event Listeners ---
             startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
             resetBtn.addEventListener('click', () => resetTimer(mode));
             settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
@@ -541,7 +559,26 @@
                     toggleTaskCompleted(parseInt(completeButton.dataset.completeId));
                 }
             });
+            
+            // NOVO: Lógica do botão de compartilhar
+            if (navigator.share) {
+                shareBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.share({
+                            title: 'Foco Total - App Pomodoro',
+                            text: 'Use este app Pomodoro para aumentar sua produtividade e gerenciar suas tarefas!',
+                            url: window.location.href,
+                        });
+                    } catch (error) {
+                        console.error('Erro ao compartilhar:', error);
+                    }
+                });
+            } else {
+                // Esconde o botão se a API de compartilhamento não for suportada
+                shareBtn.style.display = 'none';
+            }
 
+            // --- Inicialização ---
             loadState();
             renderTasks();
             resetTimer('focus');
