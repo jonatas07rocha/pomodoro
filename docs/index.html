@@ -51,12 +51,18 @@
         }
 
         .task-item {
-            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.3s ease;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.3s ease, opacity 0.3s;
         }
         .task-item.selected {
             background-color: #374151;
             border-color: #3B82F6;
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+        }
+        .task-item.completed {
+            opacity: 0.6;
+        }
+        .task-item.completed .task-name {
+            text-decoration: line-through;
         }
         
         #timer-display {
@@ -255,11 +261,10 @@
                     audioContext.resume();
                 }
                 
-                // Cria uma sequência de bipes para um alarme mais perceptível
                 const now = audioContext.currentTime;
-                const fundamental = 440; // Nota Lá (A4)
-                const duration = 0.1;    // Duração de cada bipe
-                const gap = 0.15;        // Espaço entre os bipes
+                const fundamental = 440; 
+                const duration = 0.1;    
+                const gap = 0.15;        
 
                 for (let i = 0; i < 3; i++) {
                     const oscillator = audioContext.createOscillator();
@@ -267,12 +272,10 @@
                     oscillator.connect(gainNode);
                     gainNode.connect(audioContext.destination);
 
-                    oscillator.type = 'triangle'; // Um tom um pouco mais suave que a onda senoidal
-                    // Alterna o tom para criar um efeito de alarme
+                    oscillator.type = 'triangle';
                     oscillator.frequency.setValueAtTime(fundamental * (i % 2 === 0 ? 1.5 : 2), now + i * gap);
-                    gainNode.gain.setValueAtTime(0.15, now + i * gap); // Volume um pouco mais baixo
+                    gainNode.gain.setValueAtTime(0.15, now + i * gap);
                     
-                    // Diminui o volume no final do bipe
                     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + i * gap + duration);
 
                     oscillator.start(now + i * gap);
@@ -322,7 +325,10 @@
                 isRunning = false;
                 if (mode === 'focus') {
                     const task = tasks.find(t => t.id === selectedTaskId);
-                    if (task) task.pomodoros++;
+                    if (task) {
+                        task.pomodoros++;
+                        // Não marca a tarefa como concluída automaticamente
+                    }
                     pomodorosCompleted++;
                     renderTasks();
                     mode = (pomodorosCompleted % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
@@ -378,19 +384,38 @@
             };
             
             const renderTasks = () => {
+                // Ordena as tarefas: incompletas primeiro, depois completas
+                tasks.sort((a, b) => a.completed - b.completed);
+
                 taskListEl.innerHTML = tasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione sua primeira tarefa!</p>' : '';
                 tasks.forEach(task => {
                     const taskEl = document.createElement('div');
-                    taskEl.className = `task-item flex justify-between items-center bg-gray-900 p-2 rounded-lg border-2 border-transparent cursor-pointer ${task.id === selectedTaskId ? 'selected' : ''}`;
+                    const isSelected = task.id === selectedTaskId;
+                    const isCompleted = task.completed;
+                    
+                    taskEl.className = `task-item flex justify-between items-center bg-gray-900 p-2 rounded-lg border-2 border-transparent cursor-pointer ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`;
                     taskEl.dataset.id = task.id;
+
+                    const checkboxIcon = isCompleted ? 'check-square' : 'square';
+                    
                     taskEl.innerHTML = `
-                        <span class="truncate pr-2 text-sm">${task.name}</span>
+                        <div class="flex items-center flex-grow min-w-0">
+                            <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-2 flex-shrink-0"><i data-lucide="${checkboxIcon}" class="w-5 h-5"></i></button>
+                            <span class="task-name truncate pr-2 text-sm">${task.name}</span>
+                        </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             <span class="text-xs text-gray-400 font-bold flex items-center"><i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>${task.pomodoros}</span>
                             <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     `;
-                    taskEl.onclick = () => selectTask(task.id);
+                    
+                    // Adiciona o listener de clique para selecionar a tarefa (se não estiver concluída)
+                    taskEl.addEventListener('click', (e) => {
+                        if (!e.target.closest('.complete-btn') && !e.target.closest('.delete-btn')) {
+                            selectTask(task.id);
+                        }
+                    });
+
                     taskListEl.appendChild(taskEl);
                 });
                 updateCurrentTaskDisplay();
@@ -401,7 +426,8 @@
             const addTask = () => {
                 const taskName = newTaskInput.value.trim();
                 if (taskName) {
-                    const newTask = { id: Date.now(), name: taskName, pomodoros: 0 };
+                    // Adiciona a propriedade 'completed'
+                    const newTask = { id: Date.now(), name: taskName, pomodoros: 0, completed: false };
                     tasks.push(newTask);
                     newTaskInput.value = '';
                     renderTasks();
@@ -418,10 +444,32 @@
                 renderTasks();
             };
 
+            const toggleTaskCompleted = (id) => {
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    task.completed = !task.completed;
+                    // Se a tarefa concluída era a selecionada, deseleciona
+                    if (task.completed && selectedTaskId === id) {
+                        selectedTaskId = null;
+                        if(isRunning && mode === 'focus') {
+                            pauseTimer();
+                        }
+                    }
+                    renderTasks();
+                }
+            };
+
             const selectTask = (id) => {
-                selectedTaskId = id;
-                if (!isRunning && mode !== 'focus') resetTimer('focus');
-                else renderTasks();
+                const task = tasks.find(t => t.id === id);
+                // Só permite selecionar tarefas não concluídas
+                if (task && !task.completed) {
+                    selectedTaskId = id;
+                    if (!isRunning && mode !== 'focus') {
+                        resetTimer('focus');
+                    } else {
+                        renderTasks();
+                    }
+                }
             };
             
             const updateCurrentTaskDisplay = () => {
@@ -453,7 +501,12 @@
 
                 tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
                 selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
-                selectedTaskId = (selectedTaskId && tasks.find(t => t.id === selectedTaskId)) ? selectedTaskId : (tasks.length > 0 ? tasks[0].id : null);
+                selectedTaskId = (selectedTaskId && tasks.find(t => t.id === selectedTaskId)) ? selectedTaskId : null;
+                // Garante que uma tarefa concluída não seja carregada como selecionada
+                if (selectedTaskId && tasks.find(t => t.id === selectedTaskId)?.completed) {
+                    selectedTaskId = null;
+                }
+
                 pomodorosCompleted = JSON.parse(localStorage.getItem('pomodoroCompletedCount')) || 0;
             };
 
@@ -480,6 +533,12 @@
                 if (deleteButton) {
                     e.stopPropagation();
                     deleteTask(parseInt(deleteButton.dataset.deleteId));
+                    return;
+                }
+                const completeButton = e.target.closest('.complete-btn');
+                if (completeButton) {
+                    e.stopPropagation();
+                    toggleTaskCompleted(parseInt(completeButton.dataset.completeId));
                 }
             });
 
