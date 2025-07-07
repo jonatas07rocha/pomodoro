@@ -118,17 +118,74 @@
             border-radius: 1rem;
             padding: 1rem;
             margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
             transition: all 0.5s ease;
         }
+        #yt-player {
+            position: absolute;
+            top: -9999px; left: -9999px;
+            width: 1px; height: 1px;
+        }
         
-        #sound-wave-canvas {
+        @keyframes marquee {
+            0%   { transform: translateX(0); }
+            10%  { transform: translateX(0); }
+            90%  { transform: translateX(calc(-100% - 20px)); }
+            100% { transform: translateX(calc(-100% - 20px)); }
+        }
+        .marquee-container {
             width: 100%;
-            height: 60px;
-            display: block;
-            margin-top: 0.5rem;
-            border-radius: 0.5rem;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .marquee-text.scrolling {
+            display: inline-block;
+            padding-right: 20px;
+            animation: marquee 10s linear infinite;
         }
 
+        #music-loader, #music-visualizer-view {
+            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s, height 0.4s ease;
+        }
+        
+        .music-player-minimized #music-loader {
+            opacity: 0;
+            transform: translateY(-20px);
+            visibility: hidden;
+            height: 0;
+            pointer-events: none;
+        }
+        
+        .music-player-maximized #music-visualizer-view {
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+            height: 0;
+            pointer-events: none;
+        }
+
+        #sound-wave-canvas {
+            width: 100%;
+            height: 40px;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        #expand-player-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            padding: 4px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .music-player-minimized:hover #expand-player-btn {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -164,32 +221,32 @@
             </div>
         </div>
         
-        <div id="music-player-container">
-            <h3 class="text-base font-semibold text-white mb-2 text-center">Música Ambiente</h3>
-            
-            <div class="text-center h-10 mb-2">
-                 <p id="music-status" class="text-sm text-gray-300 truncate">Escolha um gênero e clique em ▶</p>
-                 <p id="music-artist" class="text-xs text-gray-500 truncate"></p>
+        <div id="music-player-container" class="music-player-maximized">
+            <div id="music-loader">
+                <h3 class="text-base font-semibold text-white mb-3 text-center">Música Ambiente</h3>
+                <div class="flex space-x-2">
+                    <input type="text" id="youtube-url-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Cole o link do YouTube aqui...">
+                    <button id="load-music-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm flex-shrink-0">Carregar</button>
+                </div>
             </div>
 
-            <canvas id="sound-wave-canvas"></canvas>
-            
-            <div class="flex items-end space-x-2 mt-3">
-                <div class="flex-grow">
-                    <label for="genre-select" class="text-xs text-gray-500 pl-1">Gênero</label>
-                    <select id="genre-select" class="mt-1 w-full bg-gray-700 text-white rounded-lg px-2 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none appearance-none">
-                    </select>
+            <div id="music-visualizer-view">
+                <div class="marquee-container">
+                    <p id="music-status" class="marquee-text text-sm text-center text-gray-300 truncate">Nenhuma música carregada.</p>
                 </div>
-                <button id="music-control-btn" title="Tocar" class="bg-green-600 hover:bg-green-700 text-white font-bold p-2 rounded-lg transition-colors flex-shrink-0">
-                    <i data-lucide="play" class="w-5 h-5"></i>
-                </button>
-                <div class="flex flex-col items-center">
-                     <label for="volume-slider" class="text-xs text-gray-500">Volume</label>
-                     <input type="range" id="volume-slider" min="0" max="100" value="50" class="mt-1 w-20 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                </div>
+                <canvas id="sound-wave-canvas"></canvas>
             </div>
+            
+            <div class="mt-3">
+                <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <button id="expand-player-btn" title="Mostrar carregador de música">
+                <i data-lucide="arrow-down-to-line" class="w-5 h-5 text-gray-300"></i>
+            </button>
         </div>
-        <audio id="audio-player" crossorigin="anonymous"></audio>
+        <div id="yt-player"></div>
 
         <div class="space-y-2 mt-4">
             <button id="start-pause-btn" class="w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg">
@@ -219,6 +276,7 @@
     <div id="settings-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações & Ajuda</h2>
+            
             <div class="mb-4">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Duração (minutos)</h3>
                 <div class="grid grid-cols-3 gap-2 text-center">
@@ -236,6 +294,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="mb-4">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Notificações</h3>
                 <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
@@ -244,6 +303,7 @@
                 </div>
                 <p id="notifications-status-msg" class="text-xs text-gray-500 mt-2 pl-1"></p>
             </div>
+            
             <div class="mb-4">
                <h3 class="text-base font-semibold text-blue-400 mb-3">Outros Ajustes</h3>
                <div>
@@ -251,6 +311,7 @@
                     <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
                </div>
             </div>
+
             <div class="flex-grow">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Guia Rápido</h3>
                 <ul class="list-disc list-inside text-gray-300 space-y-1 text-xs">
@@ -268,6 +329,14 @@
     </div>
 
     <script>
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        let ytPlayer;
+        function onYouTubeIframeAPIReady() {}
+
         document.addEventListener('DOMContentLoaded', () => {
             const favicon = document.getElementById('favicon');
             const timerDisplay = document.getElementById('timer-display');
@@ -281,41 +350,35 @@
             const taskListEl = document.getElementById('task-list');
             const currentTaskDisplay = document.getElementById('current-task-display');
             const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
+            
             const alertModalOverlay = document.getElementById('alert-modal-overlay');
             const alertModalMessage = document.getElementById('alert-modal-message');
             const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+            
             const settingsModalOverlay = document.getElementById('settings-modal-overlay');
             const settingsSaveBtn = document.getElementById('settings-save-btn');
             const focusDurationInput = document.getElementById('focus-duration');
             const shortBreakDurationInput = document.getElementById('short-break-duration');
             const longBreakDurationInput = document.getElementById('long-break-duration');
             const longBreakIntervalInput = document.getElementById('long-break-interval');
-            const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
-            const notificationsStatusMsg = document.getElementById('notifications-status-msg');
-
-            const audioPlayer = document.getElementById('audio-player');
-            const musicControlBtn = document.getElementById('music-control-btn');
+            
+            const musicPlayerContainer = document.getElementById('music-player-container');
+            const youtubeUrlInput = document.getElementById('youtube-url-input');
+            const loadMusicBtn = document.getElementById('load-music-btn');
             const volumeSlider = document.getElementById('volume-slider');
             const musicStatus = document.getElementById('music-status');
-            const musicArtist = document.getElementById('music-artist');
+            const expandPlayerBtn = document.getElementById('expand-player-btn');
             const canvas = document.getElementById('sound-wave-canvas');
             const canvasCtx = canvas.getContext('2d');
-            const genreSelect = document.getElementById('genre-select');
 
-            const genres = {
-                'Lofi & Chill': 'lofi+chillout+ambient',
-                'Piano Suave': 'piano+classical+instrumental',
-                'Sons da Natureza': 'nature+ambient+soundscape',
-                'Eletrônica Calma': 'electronic+ambient+downtempo'
-            };
-            let audioContext, analyser, sourceNode, dataArray, visualizerAnimationId;
-            let isMusicLoaded = false;
-            let currentPlaylist = [];
-            let currentTrackIndex = 0;
+            const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+            const notificationsStatusMsg = document.getElementById('notifications-status-msg');
 
             let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
             let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
+            let audioContext; 
+            let visualizerAnimationId;
 
             const showNotification = (title, body) => {
                 if ('Notification' in window && Notification.permission === 'granted') {
@@ -335,7 +398,9 @@
                     enableNotificationsBtn.style.display = 'none';
                     return;
                 }
+                
                 enableNotificationsBtn.className = 'text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs';
+
                 switch(Notification.permission) {
                     case 'granted':
                         enableNotificationsBtn.textContent = 'Ativadas';
@@ -349,7 +414,7 @@
                         enableNotificationsBtn.classList.add('bg-red-600', 'cursor-not-allowed');
                         notificationsStatusMsg.textContent = 'Você bloqueou as notificações. Altere nas configurações do seu navegador para reativar.';
                         break;
-                    default:
+                    default: 
                         enableNotificationsBtn.textContent = 'Ativar';
                         enableNotificationsBtn.disabled = false;
                         enableNotificationsBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
@@ -358,9 +423,21 @@
                 }
             };
 
+            const initAudioContext = () => {
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.error("Web Audio API is not supported in this browser.");
+                    }
+                }
+            };
+            
             const playSound = () => {
                 if (!audioContext) return; 
-                if (audioContext.state === 'suspended') audioContext.resume();
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
                 const now = audioContext.currentTime;
                 const fundamental = 440, duration = 0.1, gap = 0.15;
                 for (let i = 0; i < 3; i++) {
@@ -388,18 +465,23 @@
             const hideModal = (modalOverlay) => modalOverlay.classList.remove('visible');
 
             const startTimer = () => {
+                initAudioContext(); 
                 if (isRunning) return;
                 if (!selectedTaskId && mode === 'focus') {
                     showModal(alertModalOverlay, 'Por favor, selecione uma tarefa para iniciar o foco.');
                     return;
                 }
+                
                 if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission().then(updateNotificationStatusUI);
+                    Notification.requestPermission().then(permission => {
+                        updateNotificationStatusUI();
+                    });
                 }
+
                 isRunning = true;
                 timer = setInterval(updateTimer, 1000);
-                if (audioPlayer.src && audioPlayer.paused) {
-                    audioPlayer.play().catch(e => console.error("Erro ao tocar áudio:", e));
+                if (ytPlayer && typeof ytPlayer.playVideo === 'function' && ytPlayer.getPlayerState() !== 1) {
+                    ytPlayer.playVideo();
                 }
                 updateUI();
             };
@@ -408,7 +490,12 @@
                 if (!isRunning) return;
                 isRunning = false;
                 clearInterval(timer);
-                audioPlayer.pause();
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                    ytPlayer.pauseVideo();
+                    if(typeof ytPlayer.getCurrentTime === 'function') {
+                       localStorage.setItem('pomodoroMusicTimestamp', ytPlayer.getCurrentTime());
+                    }
+                }
                 updateUI();
             };
             
@@ -423,23 +510,33 @@
 
             const switchMode = () => {
                 playSound();
-                audioPlayer.pause();
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                    ytPlayer.pauseVideo();
+                }
+
                 isRunning = false;
                 let notificationTitle = '';
                 let notificationBody = '';
+
                 if (mode === 'focus') {
                     const task = tasks.find(t => t.id === selectedTaskId);
-                    if (task) task.pomodoros++;
+                    if (task) {
+                        task.pomodoros++;
+                    }
                     pomodorosCompleted++;
                     renderTasks();
                     mode = (pomodorosCompleted % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
+                    
                     notificationTitle = 'Sessão de Foco Concluída!';
-                    notificationBody = mode === 'longBreak' ? `Hora de uma pausa longa de ${settings.longBreakDuration} minutos.` : `Faça uma pausa curta de ${settings.shortBreakDuration} minutos.`;
+                    notificationBody = mode === 'longBreak' 
+                        ? `Hora de uma pausa longa de ${settings.longBreakDuration} minutos.` 
+                        : `Faça uma pausa curta de ${settings.shortBreakDuration} minutos.`;
                 } else {
                     mode = 'focus';
                     notificationTitle = 'Pausa Finalizada!';
                     notificationBody = `Vamos voltar ao foco por ${settings.focusDuration} minutos.`;
                 }
+                
                 showNotification(notificationTitle, notificationBody);
                 resetTimer();
             };
@@ -447,153 +544,89 @@
             const resetTimer = (forceMode = null) => {
                 clearInterval(timer);
                 isRunning = false;
-                audioPlayer.pause();
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function' && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === 1) {
+                    ytPlayer.pauseVideo();
+                }
                 mode = forceMode || mode;
                 timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
                 totalTime = timeRemaining;
                 updateUI();
             };
-            
-            const populateGenres = () => {
-                for (const genreName in genres) {
-                    const option = document.createElement('option');
-                    option.value = genres[genreName];
-                    option.textContent = genreName;
-                    genreSelect.appendChild(option);
+
+            const updateUI = () => {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                document.title = `${timerDisplay.textContent} - Foco Total`;
+
+                let modeColor, modeShadowColor;
+                switch (mode) {
+                    case 'focus':
+                        modeColor = 'blue';
+                        modeShadowColor = 'rgba(59, 130, 246, 0.7)';
+                        break;
+                    case 'shortBreak':
+                        modeColor = 'green';
+                        modeShadowColor = 'rgba(34, 197, 94, 0.7)';
+                        break;
+                    case 'longBreak':
+                        modeColor = 'indigo';
+                        modeShadowColor = 'rgba(99, 102, 241, 0.7)';
+                        break;
                 }
-            };
 
-            const fetchPlaylist = async () => {
-                const selectedTags = genreSelect.value;
-                musicStatus.textContent = 'Buscando playlist...';
-                musicArtist.textContent = '';
-                musicControlBtn.disabled = true;
+                progressRing.setAttribute('class', `text-${modeColor}-500`);
+                progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
+                startPauseBtn.style.boxShadow = `0 0 15px ${modeShadowColor}`;
+                startPauseBtn.setAttribute('class', `w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg bg-${modeColor}-600 hover:bg-${modeColor}-700`);
+                startPauseBtn.textContent = isRunning ? 'Pausar' : (mode === 'focus' ? 'Iniciar Foco' : 'Iniciar Pausa');
 
-                try {
-                    // ATUALIZADO: A URL agora aponta para o nosso servidor proxy.
-                    // Em um ambiente de produção (como Vercel), esta rota relativa funcionará.
-                    const url = `/api/music?tags=${selectedTags}`;
-                    const response = await fetch(url);
-                    if (!response.ok) {
-                         const errorData = await response.json();
-                         throw new Error(errorData.error || `Erro no servidor: ${response.statusText}`);
-                    }
-                    
-                    const data = await response.json();
-                    if (!data.results || data.results.length === 0) {
-                        throw new Error('Nenhuma música encontrada para este gênero.');
-                    }
-
-                    currentPlaylist = data.results.filter(track => track.audio);
-                    
-                    if (currentPlaylist.length === 0) {
-                        throw new Error('Músicas encontradas, mas sem áudio disponível.');
-                    }
-
-                    currentTrackIndex = 0;
-                    playCurrentTrack();
-
-                } catch (error) {
-                    console.error("Erro ao buscar playlist:", error);
-                    musicStatus.textContent = 'Erro ao buscar músicas.';
-                    showModal(alertModalOverlay, `Não foi possível carregar as músicas: ${error.message}`);
-                } finally {
-                    musicControlBtn.disabled = false;
-                }
+                const circumference = 2 * Math.PI * 45;
+                const offset = circumference - (timeRemaining / totalTime) * circumference;
+                progressRing.style.strokeDasharray = circumference;
+                progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
+                
+                lucide.createIcons();
             };
             
-            const handleMusicControl = () => {
-                if (!isMusicLoaded) {
-                    fetchPlaylist();
-                } else {
-                    playNextTrack();
-                }
-            };
-
-            const playCurrentTrack = () => {
-                if (currentPlaylist.length === 0) return;
-                
-                const track = currentPlaylist[currentTrackIndex];
-                musicStatus.textContent = track.name;
-                musicStatus.title = track.name;
-                musicArtist.textContent = `por ${track.artist_name}`;
-                audioPlayer.src = track.audio;
-                
-                audioPlayer.play();
-
-                if (!isVisualizerSetup) {
-                    setupAudioVisualizer();
-                }
-                
-                if (!isMusicLoaded) {
-                    isMusicLoaded = true;
-                    musicControlBtn.title = "Próxima Faixa";
-                    musicControlBtn.innerHTML = `<i data-lucide="skip-forward" class="w-5 h-5"></i>`;
-                    lucide.createIcons();
-                }
-            };
-
-            const playNextTrack = () => {
-                if (currentPlaylist.length === 0) {
-                    fetchPlaylist();
-                    return;
-                }
-                currentTrackIndex = (currentTrackIndex + 1) % currentPlaylist.length;
-                playCurrentTrack();
-            };
-            
-            const setupAudioVisualizer = () => {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                sourceNode = audioContext.createMediaElementSource(audioPlayer);
-                sourceNode.connect(analyser);
-                analyser.connect(audioContext.destination);
-                analyser.fftSize = 256;
-                const bufferLength = analyser.frequencyBinCount;
-                dataArray = new Uint8Array(bufferLength);
-                isVisualizerSetup = true;
-                drawVisualizer();
-            };
-
-            const drawVisualizer = () => {
-                visualizerAnimationId = requestAnimationFrame(drawVisualizer);
-                if (audioPlayer.paused) {
-                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    return;
-                }
-                analyser.getByteFrequencyData(dataArray);
-                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                const barWidth = (canvas.width / dataArray.length) * 1.5;
-                let x = 0;
-                for (let i = 0; i < dataArray.length; i++) {
-                    const barHeight = dataArray[i] * 0.25;
-                    const gradient = canvasCtx.createLinearGradient(0, 0, 0, canvas.height);
-                    gradient.addColorStop(0, '#C4B5FD');
-                    gradient.addColorStop(1, '#8B5CF6');
-                    canvasCtx.fillStyle = gradient;
-                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                    x += barWidth + 2;
-                }
-            };
-
             const renderTasks = () => {
                 tasks.sort((a, b) => a.completed - b.completed);
+
                 taskListEl.innerHTML = tasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione sua primeira tarefa!</p>' : '';
                 tasks.forEach(task => {
                     const taskEl = document.createElement('div');
                     const isSelected = task.id === selectedTaskId;
                     const isCompleted = task.completed;
+                    
                     taskEl.className = `task-item flex justify-between items-center bg-gray-900 p-2 rounded-lg border-2 border-transparent cursor-pointer ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`;
                     taskEl.dataset.id = task.id;
+
                     const checkboxIcon = isCompleted ? 'check-square' : 'square';
-                    taskEl.innerHTML = `<div class="flex items-center flex-grow min-w-0"><button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-2 flex-shrink-0"><i data-lucide="${checkboxIcon}" class="w-5 h-5"></i></button><span class="task-name truncate pr-2 text-sm">${task.name}</span></div><div class="flex items-center space-x-2 flex-shrink-0"><span class="text-xs text-gray-400 font-bold flex items-center"><i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>${task.pomodoros}</span><button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
-                    taskEl.addEventListener('click', (e) => { if (!e.target.closest('.complete-btn') && !e.target.closest('.delete-btn')) selectTask(task.id); });
+                    
+                    taskEl.innerHTML = `
+                        <div class="flex items-center flex-grow min-w-0">
+                            <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-2 flex-shrink-0"><i data-lucide="${checkboxIcon}" class="w-5 h-5"></i></button>
+                            <span class="task-name truncate pr-2 text-sm">${task.name}</span>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <span class="text-xs text-gray-400 font-bold flex items-center"><i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>${task.pomodoros}</span>
+                            <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    `;
+                    
+                    taskEl.addEventListener('click', (e) => {
+                        if (!e.target.closest('.complete-btn') && !e.target.closest('.delete-btn')) {
+                            selectTask(task.id);
+                        }
+                    });
+
                     taskListEl.appendChild(taskEl);
                 });
                 updateCurrentTaskDisplay();
                 saveState();
                 lucide.createIcons();
             };
+
             const addTask = () => {
                 const taskName = newTaskInput.value.trim();
                 if (taskName) {
@@ -601,9 +634,12 @@
                     tasks.push(newTask);
                     newTaskInput.value = '';
                     renderTasks();
-                    if (!selectedTaskId || tasks.find(t => t.id === selectedTaskId)?.completed) selectTask(newTask.id);
+                    if (!selectedTaskId || tasks.find(t => t.id === selectedTaskId)?.completed) {
+                       selectTask(newTask.id);
+                    }
                 }
             };
+
             const deleteTask = (id) => {
                 tasks = tasks.filter(task => task.id !== id);
                 if (selectedTaskId === id) {
@@ -613,6 +649,7 @@
                 }
                 renderTasks();
             };
+
             const toggleTaskCompleted = (id) => {
                 const task = tasks.find(t => t.id === id);
                 if (task) {
@@ -620,19 +657,26 @@
                     if (task.completed && selectedTaskId === id) {
                         const firstIncompleteTask = tasks.find(t => !t.completed);
                         selectedTaskId = firstIncompleteTask ? firstIncompleteTask.id : null;
-                        if(isRunning && mode === 'focus') pauseTimer();
+                        if(isRunning && mode === 'focus') {
+                            pauseTimer();
+                        }
                     }
                     renderTasks();
                 }
             };
+
             const selectTask = (id) => {
                 const task = tasks.find(t => t.id === id);
                 if (task && !task.completed) {
                     selectedTaskId = id;
-                    if (!isRunning && mode !== 'focus') resetTimer('focus');
-                    else renderTasks();
+                    if (!isRunning && mode !== 'focus') {
+                        resetTimer('focus');
+                    } else {
+                        renderTasks();
+                    }
                 }
             };
+            
             const updateCurrentTaskDisplay = () => {
                 const task = tasks.find(t => t.id === selectedTaskId);
                 currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
@@ -645,52 +689,228 @@
                 }
                 lucide.createIcons();
             };
+
             const saveState = () => {
                 localStorage.setItem('pomodoroSettings', JSON.stringify(settings));
                 localStorage.setItem('pomodoroTasks', JSON.stringify(tasks));
                 localStorage.setItem('pomodoroSelectedTaskId', JSON.stringify(selectedTaskId));
                 localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
+                
+                if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function' && youtubeUrlInput.value) {
+                    localStorage.setItem('pomodoroMusicUrl', youtubeUrlInput.value);
+                    localStorage.setItem('pomodoroMusicVolume', volumeSlider.value);
+                    localStorage.setItem('pomodoroMusicTimestamp', ytPlayer.getCurrentTime());
+                }
             };
+
             const loadState = () => {
                 settings = { ...settings, ...JSON.parse(localStorage.getItem('pomodoroSettings')) };
                 focusDurationInput.value = settings.focusDuration;
                 shortBreakDurationInput.value = settings.shortBreakDuration;
                 longBreakDurationInput.value = settings.longBreakDuration;
                 longBreakIntervalInput.value = settings.longBreakInterval;
+
                 tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
                 selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
+                
                 if (selectedTaskId) {
                     const task = tasks.find(t => t.id === selectedTaskId);
-                    if (!task || task.completed) selectedTaskId = null;
+                    if (!task || task.completed) {
+                        selectedTaskId = null;
+                    }
                 }
                 if (!selectedTaskId) {
                     const firstIncompleteTask = tasks.find(t => !t.completed);
-                    if (firstIncompleteTask) selectedTaskId = firstIncompleteTask.id;
+                    if (firstIncompleteTask) {
+                        selectedTaskId = firstIncompleteTask.id;
+                    }
                 }
+
                 pomodorosCompleted = JSON.parse(localStorage.getItem('pomodoroCompletedCount')) || 0;
-            };
-            const updateUI = () => {
-                const minutes = Math.floor(timeRemaining / 60);
-                const seconds = timeRemaining % 60;
-                timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                document.title = `${timerDisplay.textContent} - Foco Total`;
-                let modeColor, modeShadowColor;
-                switch (mode) {
-                    case 'focus': modeColor = 'blue'; modeShadowColor = 'rgba(59, 130, 246, 0.7)'; break;
-                    case 'shortBreak': modeColor = 'green'; modeShadowColor = 'rgba(34, 197, 94, 0.7)'; break;
-                    case 'longBreak': modeColor = 'indigo'; modeShadowColor = 'rgba(99, 102, 241, 0.7)'; break;
+
+                const savedUrl = localStorage.getItem('pomodoroMusicUrl');
+                if (savedUrl) {
+                    youtubeUrlInput.value = savedUrl;
+                    loadYouTubeMusic(savedUrl, true);
                 }
-                progressRing.setAttribute('class', `text-${modeColor}-500`);
-                progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
-                startPauseBtn.style.boxShadow = `0 0 15px ${modeShadowColor}`;
-                startPauseBtn.setAttribute('class', `w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg bg-${modeColor}-600 hover:bg-${modeColor}-700`);
-                startPauseBtn.textContent = isRunning ? 'Pausar' : (mode === 'focus' ? 'Iniciar Foco' : 'Iniciar Pausa');
-                const circumference = 2 * Math.PI * 45;
-                const offset = circumference - (timeRemaining / totalTime) * circumference;
-                progressRing.style.strokeDasharray = circumference;
-                progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
-                lucide.createIcons();
+                const savedVolume = localStorage.getItem('pomodoroMusicVolume');
+                if (savedVolume) {
+                    volumeSlider.value = savedVolume;
+                    if(ytPlayer) ytPlayer.setVolume(savedVolume);
+                }
             };
+            
+            const parseYouTubeUrl = (url) => {
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                const match = url.match(regExp);
+                if (match && match[2].length === 11) {
+                    return { type: 'video', id: match[2] };
+                } 
+                const playlistRegExp = /[?&]list=([^#\&\?]+)/;
+                const playlistMatch = url.match(playlistRegExp);
+                if (playlistMatch && playlistMatch[1]) {
+                    return { type: 'playlist', id: playlistMatch[1] };
+                }
+                return null;
+            };
+
+            const loadYouTubeMusic = (url, isInitialLoad = false) => {
+                const content = parseYouTubeUrl(url);
+                if (!content) {
+                    showModal(alertModalOverlay, 'URL do YouTube inválida.');
+                    return;
+                }
+                
+                const savedTimestamp = isInitialLoad ? parseFloat(localStorage.getItem('pomodoroMusicTimestamp')) || 0 : 0;
+                if (!isInitialLoad) {
+                    localStorage.removeItem('pomodoroMusicTimestamp');
+                }
+
+                const playerVars = {
+                    'autoplay': isInitialLoad ? 0 : 1,
+                    'controls': 0, 'modestbranding': 1, 'loop': 1,
+                    'start': Math.round(savedTimestamp)
+                };
+                
+                const loadOptions = { playerVars: playerVars };
+                if (content.type === 'video') {
+                    loadOptions.videoId = content.id;
+                } else {
+                    loadOptions.playerVars.listType = 'playlist';
+                    loadOptions.playerVars.list = content.id;
+                }
+
+                if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+                    ytPlayer.destroy();
+                }
+
+                ytPlayer = new YT.Player('yt-player', {
+                    height: '1', width: '1', ...loadOptions,
+                    events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
+                });
+            };
+            
+            function onPlayerReady(event) {
+                event.target.setVolume(volumeSlider.value);
+                if (isRunning && event.target.getPlayerState() !== 1) {
+                    event.target.playVideo();
+                }
+                updateMusicStatus();
+            }
+
+            function onPlayerStateChange(event) {
+                if (event.data === YT.PlayerState.PLAYING) {
+                    setMusicPlayerView('minimized');
+                    setTimeout(() => {
+                        if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                            startVisualizer();
+                        }
+                    }, 400); 
+                    updateMusicStatus();
+                } else {
+                    stopVisualizer();
+                    if (event.data !== YT.PlayerState.BUFFERING) {
+                        setMusicPlayerView('maximized');
+                    }
+                }
+                 if (event.data === YT.PlayerState.ENDED) {
+                    const content = parseYouTubeUrl(youtubeUrlInput.value);
+                    if (content && content.type === 'video') {
+                         ytPlayer.seekTo(0);
+                         ytPlayer.playVideo();
+                    }
+                }
+            }
+
+            function updateMusicStatus() {
+                if (!ytPlayer || typeof ytPlayer.getVideoData !== 'function' || !ytPlayer.getVideoData().title) {
+                    musicStatus.textContent = "A carregar música...";
+                    return;
+                };
+                const title = ytPlayer.getVideoData().title;
+                musicStatus.textContent = title;
+                musicStatus.title = title;
+
+                const containerWidth = musicStatus.parentElement.offsetWidth;
+                const tempSpan = document.createElement('span');
+                tempSpan.style.visibility = 'hidden';
+                tempSpan.style.position = 'absolute';
+                tempSpan.style.whiteSpace = 'nowrap';
+                tempSpan.style.fontSize = getComputedStyle(musicStatus).fontSize;
+                tempSpan.textContent = title;
+                document.body.appendChild(tempSpan);
+                const textWidth = tempSpan.offsetWidth;
+                document.body.removeChild(tempSpan);
+                
+                if (textWidth > containerWidth) {
+                    musicStatus.classList.add('scrolling');
+                } else {
+                    musicStatus.classList.remove('scrolling');
+                }
+            }
+            
+            function setMusicPlayerView(view) {
+                if (view === 'minimized') {
+                    musicPlayerContainer.classList.remove('music-player-maximized');
+                    musicPlayerContainer.classList.add('music-player-minimized');
+                } else {
+                    musicPlayerContainer.classList.remove('music-player-minimized');
+                    musicPlayerContainer.classList.add('music-player-maximized');
+                }
+            }
+
+            function startVisualizer() {
+                if (visualizerAnimationId) cancelAnimationFrame(visualizerAnimationId);
+                
+                const draw = () => {
+                    if (!canvas) return;
+                    const dpr = window.devicePixelRatio || 1;
+                    canvas.width = canvas.offsetWidth * dpr;
+                    canvas.height = canvas.offsetHeight * dpr;
+                    canvasCtx.scale(dpr, dpr);
+
+                    canvasCtx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+                    
+                    const barCount = 16;
+                    const barWidth = (canvas.offsetWidth / barCount) * 0.5;
+                    const spaceWidth = (canvas.offsetWidth / barCount) * 0.5;
+                    const maxBarHeight = canvas.offsetHeight * 0.9;
+                    
+                    canvasCtx.lineWidth = barWidth;
+                    canvasCtx.lineCap = 'round';
+
+                    for (let i = 0; i < barCount; i++) {
+                        const barHeight = (Math.sin(i * 0.5 + Date.now() * 0.008) * 0.5 + 0.5) * maxBarHeight + (canvas.offsetHeight * 0.05);
+                        const x = i * (barWidth + spaceWidth) + (barWidth + spaceWidth) / 2;
+                        const y1 = canvas.offsetHeight;
+                        const y2 = canvas.offsetHeight - barHeight;
+                        
+                        const gradient = canvasCtx.createLinearGradient(x, y1, x, y2);
+                        gradient.addColorStop(0, '#8B5CF6');
+                        gradient.addColorStop(1, '#C4B5FD');
+                        canvasCtx.strokeStyle = gradient;
+
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(x, y1);
+                        canvasCtx.lineTo(x, y2);
+                        canvasCtx.stroke();
+                    }
+                    
+                    visualizerAnimationId = requestAnimationFrame(draw);
+                };
+                draw();
+            }
+
+            function stopVisualizer() {
+                if (visualizerAnimationId) {
+                    cancelAnimationFrame(visualizerAnimationId);
+                    visualizerAnimationId = null;
+                    if(canvas) {
+                        const dpr = window.devicePixelRatio || 1;
+                        setTimeout(() => canvasCtx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr), 100);
+                    }
+                }
+            }
 
             startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
             resetBtn.addEventListener('click', () => resetTimer(mode));
@@ -715,45 +935,60 @@
             });
             taskListEl.addEventListener('click', (e) => {
                 const deleteButton = e.target.closest('.delete-btn');
-                if (deleteButton) { e.stopPropagation(); deleteTask(parseInt(deleteButton.dataset.deleteId)); return; }
+                if (deleteButton) {
+                    e.stopPropagation();
+                    deleteTask(parseInt(deleteButton.dataset.deleteId));
+                    return;
+                }
                 const completeButton = e.target.closest('.complete-btn');
-                if (completeButton) { e.stopPropagation(); toggleTaskCompleted(parseInt(completeButton.dataset.completeId)); }
+                if (completeButton) {
+                    e.stopPropagation();
+                    toggleTaskCompleted(parseInt(completeButton.dataset.completeId));
+                }
             });
+            
             if (navigator.share) {
                 shareBtn.addEventListener('click', async () => {
-                    try { await navigator.share({ title: 'Foco Total - App Pomodoro', text: 'Use este app Pomodoro para aumentar sua produtividade!', url: window.location.href }); } 
-                    catch (error) { console.error('Erro ao compartilhar:', error); }
+                    try {
+                        await navigator.share({
+                            title: 'Foco Total - App Pomodoro',
+                            text: 'Use este app Pomodoro para aumentar sua produtividade e gerenciar suas tarefas!',
+                            url: window.location.href,
+                        });
+                    } catch (error) {
+                        console.error('Erro ao compartilhar:', error);
+                    }
                 });
             } else {
                 shareBtn.style.display = 'none';
             }
-            enableNotificationsBtn.addEventListener('click', () => {
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission().then(updateNotificationStatusUI);
-                }
+            
+            loadMusicBtn.addEventListener('click', () => {
+                if (youtubeUrlInput.value) loadYouTubeMusic(youtubeUrlInput.value);
             });
-
-            musicControlBtn.addEventListener('click', handleMusicControl);
-            genreSelect.addEventListener('change', () => {
-                isMusicLoaded = false;
-                currentPlaylist = [];
-                audioPlayer.pause();
-                audioPlayer.removeAttribute('src');
-                musicStatus.textContent = 'Escolha um gênero e clique em ▶';
-                musicArtist.textContent = '';
-                musicControlBtn.title = "Tocar";
-                musicControlBtn.innerHTML = `<i data-lucide="play" class="w-5 h-5"></i>`;
-                lucide.createIcons();
+            youtubeUrlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && youtubeUrlInput.value) loadYouTubeMusic(youtubeUrlInput.value);
             });
             volumeSlider.addEventListener('input', (e) => {
-                audioPlayer.volume = e.target.value / 100;
+                if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
+                    ytPlayer.setVolume(e.target.value);
+                }
             });
-            audioPlayer.addEventListener('ended', playNextTrack);
-
+            expandPlayerBtn.addEventListener('click', () => {
+                setMusicPlayerView('maximized');
+            });
+            
+            enableNotificationsBtn.addEventListener('click', () => {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(() => {
+                        updateNotificationStatusUI();
+                    });
+                }
+            });
+            
             loadState();
             renderTasks();
             resetTimer('focus');
-            populateGenres();
             lucide.createIcons();
             updateNotificationStatusUI();
         });
