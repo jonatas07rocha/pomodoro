@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foco Total - Pomodoro</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Favicon Emoji -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100%22><text y=%22.9em%22 font-size=%2290%22>🍅</text></svg>">
     <style>
         body {
@@ -108,20 +112,80 @@
         .modal-overlay.visible .modal-content {
             transform: scale(1);
         }
-        /* Estilo para o player de música e slider de volume */
+        
+        /* --- ESTILOS DO PLAYER DE MÚSICA --- */
         #music-player-container {
             background-color: #111827;
             border-radius: 1rem;
             padding: 1rem;
             margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
         }
-        /* Esconde visualmente o player do YouTube */
         #yt-player {
             position: absolute;
-            top: -9999px;
-            left: -9999px;
-            width: 1px;
-            height: 1px;
+            top: -9999px; left: -9999px;
+            width: 1px; height: 1px;
+        }
+        
+        /* --- MARQUEE (TEXTO ROLANTE) --- */
+        @keyframes marquee {
+            0%   { transform: translateX(0); }
+            10%  { transform: translateX(0); } /* Pausa no início */
+            90%  { transform: translateX(calc(-100% - 20px)); } /* Rola até o fim */
+            100% { transform: translateX(calc(-100% - 20px)); } /* Pausa no fim */
+        }
+        .marquee-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .marquee-text.scrolling {
+            display: inline-block;
+            padding-right: 20px; /* Espaço para reiniciar a animação */
+            animation: marquee 10s linear infinite;
+        }
+
+        /* --- VISUALIZADOR E CONTROLES DE MINIMIZAR/MAXIMIZAR --- */
+        #music-loader, #music-visualizer-view {
+            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s, height 0.4s ease;
+        }
+        
+        .music-player-minimized #music-loader {
+            opacity: 0;
+            transform: translateY(-20px);
+            visibility: hidden;
+            height: 0;
+        }
+        
+        .music-player-maximized #music-visualizer-view {
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+            height: 0;
+        }
+
+        #sound-wave-canvas {
+            width: 100%;
+            height: 40px;
+            display: block;
+            margin-top: 0.5rem;
+        }
+
+        #expand-player-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            padding: 4px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .music-player-minimized:hover #expand-player-btn {
+            opacity: 1;
         }
     </style>
 </head>
@@ -158,19 +222,37 @@
             </div>
         </div>
         
-        <div id="music-player-container">
-            <h3 class="text-base font-semibold text-white mb-3 text-center">Música Ambiente</h3>
-            <div class="flex space-x-2">
-                <input type="text" id="youtube-url-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Cole o link do YouTube aqui...">
-                <button id="load-music-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm flex-shrink-0">Carregar</button>
+        <!-- PLAYER DE MÚSICA ATUALIZADO -->
+        <div id="music-player-container" class="music-player-maximized">
+            <!-- Visão Maximizada (Carregador) -->
+            <div id="music-loader">
+                <h3 class="text-base font-semibold text-white mb-3 text-center">Música Ambiente</h3>
+                <div class="flex space-x-2">
+                    <input type="text" id="youtube-url-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Cole o link do YouTube aqui...">
+                    <button id="load-music-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm flex-shrink-0">Carregar</button>
+                </div>
             </div>
+
+            <!-- Visão Minimizada (Visualizador) -->
+            <div id="music-visualizer-view">
+                <div class="marquee-container">
+                    <p id="music-status" class="marquee-text text-sm text-center text-gray-300 truncate">Nenhuma música carregada.</p>
+                </div>
+                <canvas id="sound-wave-canvas"></canvas>
+            </div>
+            
             <div class="mt-3">
                 <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
                 <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
             </div>
-             <p id="music-status" class="text-xs text-center text-gray-400 mt-2 truncate">Nenhuma música carregada.</p>
+
+            <button id="expand-player-btn" title="Mostrar carregador de música">
+                <i data-lucide="arrow-down-to-line" class="w-5 h-5 text-gray-300"></i>
+            </button>
         </div>
-        <div id="yt-player"></div> <div class="space-y-2 mt-4">
+        <div id="yt-player"></div>
+
+        <div class="space-y-2 mt-4">
             <button id="start-pause-btn" class="w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg">
                 Iniciar Foco
             </button>
@@ -188,6 +270,7 @@
         </div>
     </div>
 
+    <!-- Modal de Alerta -->
     <div id="alert-modal-overlay" class="modal-overlay">
         <div class="modal-content text-center">
             <p id="alert-modal-message" class="mb-4"></p>
@@ -195,6 +278,7 @@
         </div>
     </div>
 
+    <!-- Modal de Configurações -->
     <div id="settings-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações & Ajuda</h2>
@@ -239,18 +323,13 @@
     </div>
 
     <script>
-        // --- YOUTUBE PLAYER API ---
-        // Carrega a API do Iframe Player do YouTube de forma assíncrona.
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         let ytPlayer;
-        // Esta função é chamada automaticamente pela API do YouTube quando o código é carregado.
-        function onYouTubeIframeAPIReady() {
-            // A inicialização do player será feita quando o usuário carregar uma música.
-        }
+        function onYouTubeIframeAPIReady() {}
 
         document.addEventListener('DOMContentLoaded', () => {
             const deviceShell = document.getElementById('device-shell');
@@ -265,29 +344,30 @@
             const taskListEl = document.getElementById('task-list');
             const currentTaskDisplay = document.getElementById('current-task-display');
             const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
-            
             const alertModalOverlay = document.getElementById('alert-modal-overlay');
             const alertModalMessage = document.getElementById('alert-modal-message');
             const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
             const settingsModalOverlay = document.getElementById('settings-modal-overlay');
             const settingsSaveBtn = document.getElementById('settings-save-btn');
-            
             const focusDurationInput = document.getElementById('focus-duration');
             const shortBreakDurationInput = document.getElementById('short-break-duration');
             const longBreakDurationInput = document.getElementById('long-break-duration');
             const longBreakIntervalInput = document.getElementById('long-break-interval');
-
-            // --- NOVO: Elementos do Player de Música ---
+            
+            const musicPlayerContainer = document.getElementById('music-player-container');
             const youtubeUrlInput = document.getElementById('youtube-url-input');
             const loadMusicBtn = document.getElementById('load-music-btn');
             const volumeSlider = document.getElementById('volume-slider');
             const musicStatus = document.getElementById('music-status');
+            const expandPlayerBtn = document.getElementById('expand-player-btn');
+            const canvas = document.getElementById('sound-wave-canvas');
+            const canvasCtx = canvas.getContext('2d');
 
             let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
             let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
-
             let audioContext; 
+            let visualizerAnimationId;
 
             const initAudioContext = () => {
                 if (!audioContext) {
@@ -304,24 +384,17 @@
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
-                
                 const now = audioContext.currentTime;
-                const fundamental = 440; 
-                const duration = 0.1;   
-                const gap = 0.15;       
-
+                const fundamental = 440, duration = 0.1, gap = 0.15;
                 for (let i = 0; i < 3; i++) {
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
                     oscillator.connect(gainNode);
                     gainNode.connect(audioContext.destination);
-
                     oscillator.type = 'triangle';
                     oscillator.frequency.setValueAtTime(fundamental * (i % 2 === 0 ? 1.5 : 2), now + i * gap);
                     gainNode.gain.setValueAtTime(0.15, now + i * gap);
-                    
                     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + i * gap + duration);
-
                     oscillator.start(now + i * gap);
                     oscillator.stop(now + i * gap + duration);
                 }
@@ -334,6 +407,7 @@
                 }
                 modalOverlay.classList.add('visible');
             };
+
             const hideModal = (modalOverlay) => modalOverlay.classList.remove('visible');
 
             const startTimer = () => {
@@ -345,7 +419,7 @@
                 }
                 isRunning = true;
                 timer = setInterval(updateTimer, 1000);
-                if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                if (ytPlayer && typeof ytPlayer.playVideo === 'function' && ytPlayer.getPlayerState() !== 1) {
                     ytPlayer.playVideo();
                 }
                 updateUI();
@@ -357,6 +431,9 @@
                 clearInterval(timer);
                 if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
                     ytPlayer.pauseVideo();
+                    if(typeof ytPlayer.getCurrentTime === 'function') {
+                       localStorage.setItem('pomodoroMusicTimestamp', ytPlayer.getCurrentTime());
+                    }
                 }
                 updateUI();
             };
@@ -538,10 +615,11 @@
                 localStorage.setItem('pomodoroTasks', JSON.stringify(tasks));
                 localStorage.setItem('pomodoroSelectedTaskId', JSON.stringify(selectedTaskId));
                 localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
-                // NOVO: Salva a URL da música e o volume
-                if (ytPlayer) {
+                
+                if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function' && youtubeUrlInput.value) {
                     localStorage.setItem('pomodoroMusicUrl', youtubeUrlInput.value);
                     localStorage.setItem('pomodoroMusicVolume', volumeSlider.value);
+                    localStorage.setItem('pomodoroMusicTimestamp', ytPlayer.getCurrentTime());
                 }
             };
 
@@ -570,20 +648,18 @@
 
                 pomodorosCompleted = JSON.parse(localStorage.getItem('pomodoroCompletedCount')) || 0;
 
-                // NOVO: Carrega as configurações de música
                 const savedUrl = localStorage.getItem('pomodoroMusicUrl');
-                const savedVolume = localStorage.getItem('pomodoroMusicVolume');
                 if (savedUrl) {
                     youtubeUrlInput.value = savedUrl;
-                    loadYouTubeMusic(savedUrl);
+                    loadYouTubeMusic(savedUrl, true);
                 }
+                const savedVolume = localStorage.getItem('pomodoroMusicVolume');
                 if (savedVolume) {
                     volumeSlider.value = savedVolume;
                     if(ytPlayer) ytPlayer.setVolume(savedVolume);
                 }
             };
-
-            // --- NOVO: Funções do Player de Música ---
+            
             const parseYouTubeUrl = (url) => {
                 const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
                 const match = url.match(regExp);
@@ -598,27 +674,28 @@
                 return null;
             };
 
-            const loadYouTubeMusic = (url) => {
+            const loadYouTubeMusic = (url, isInitialLoad = false) => {
                 const content = parseYouTubeUrl(url);
                 if (!content) {
-                    showModal(alertModalOverlay, 'URL do YouTube inválida. Use um link de vídeo ou playlist.');
+                    showModal(alertModalOverlay, 'URL do YouTube inválida.');
                     return;
+                }
+                
+                const savedTimestamp = isInitialLoad ? parseFloat(localStorage.getItem('pomodoroMusicTimestamp')) || 0 : 0;
+                if (!isInitialLoad) {
+                    localStorage.removeItem('pomodoroMusicTimestamp');
                 }
 
                 const playerVars = {
-                    'autoplay': 0,
-                    'controls': 0,
-                    'modestbranding': 1,
-                    'loop': 1,
+                    'autoplay': isInitialLoad ? 0 : 1,
+                    'controls': 0, 'modestbranding': 1, 'loop': 1,
+                    'start': Math.round(savedTimestamp)
                 };
                 
-                const loadOptions = {
-                    playerVars: playerVars
-                };
-
+                const loadOptions = { playerVars: playerVars };
                 if (content.type === 'video') {
                     loadOptions.videoId = content.id;
-                } else { // playlist
+                } else {
                     loadOptions.playerVars.listType = 'playlist';
                     loadOptions.playerVars.list = content.id;
                 }
@@ -628,49 +705,131 @@
                 }
 
                 ytPlayer = new YT.Player('yt-player', {
-                    height: '1',
-                    width: '1',
-                    ...loadOptions,
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
-                    }
+                    height: '1', width: '1', ...loadOptions,
+                    events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
                 });
             };
             
             function onPlayerReady(event) {
                 event.target.setVolume(volumeSlider.value);
-                if (isRunning) {
+                if (isRunning && event.target.getPlayerState() !== 1) {
                     event.target.playVideo();
                 }
-                // Atualiza o status com o nome do vídeo/playlist
-                let title = "Música carregada";
-                if(event.target.getVideoData) {
-                    title = event.target.getVideoData().title || title;
-                }
-                musicStatus.textContent = title;
-                musicStatus.title = title; // Para ver o nome completo no hover
+                updateMusicStatus();
             }
 
             function onPlayerStateChange(event) {
-                if (event.data === YT.PlayerState.ENDED) {
-                    // Se for um vídeo único, reinicia para criar um loop
+                if (event.data === YT.PlayerState.PLAYING) {
+                    setMusicPlayerView('minimized');
+                    startVisualizer();
+                    updateMusicStatus();
+                } else {
+                    stopVisualizer();
+                    if (event.data !== YT.PlayerState.BUFFERING) {
+                        setMusicPlayerView('maximized');
+                    }
+                }
+                 if (event.data === YT.PlayerState.ENDED) {
                     const content = parseYouTubeUrl(youtubeUrlInput.value);
                     if (content && content.type === 'video') {
                          ytPlayer.seekTo(0);
                          ytPlayer.playVideo();
                     }
                 }
-                 if (event.data === YT.PlayerState.PLAYING) {
-                    let title = "Tocando...";
-                    if(event.target.getVideoData) {
-                        title = event.target.getVideoData().title || title;
-                    }
-                    musicStatus.textContent = title;
-                    musicStatus.title = title;
+            }
+
+            function updateMusicStatus() {
+                if (!ytPlayer || typeof ytPlayer.getVideoData !== 'function' || !ytPlayer.getVideoData().title) {
+                    musicStatus.textContent = "A carregar música...";
+                    return;
+                };
+                const title = ytPlayer.getVideoData().title;
+                musicStatus.textContent = title;
+                musicStatus.title = title;
+
+                const containerWidth = musicStatus.parentElement.offsetWidth;
+                const tempSpan = document.createElement('span');
+                tempSpan.style.visibility = 'hidden';
+                tempSpan.style.position = 'absolute';
+                tempSpan.style.whiteSpace = 'nowrap';
+                tempSpan.style.fontSize = getComputedStyle(musicStatus).fontSize;
+                tempSpan.textContent = title;
+                document.body.appendChild(tempSpan);
+                const textWidth = tempSpan.offsetWidth;
+                document.body.removeChild(tempSpan);
+                
+                if (textWidth > containerWidth) {
+                    musicStatus.classList.add('scrolling');
+                } else {
+                    musicStatus.classList.remove('scrolling');
+                }
+            }
+            
+            function setMusicPlayerView(view) {
+                if (view === 'minimized') {
+                    musicPlayerContainer.classList.remove('music-player-maximized');
+                    musicPlayerContainer.classList.add('music-player-minimized');
+                } else {
+                    musicPlayerContainer.classList.remove('music-player-minimized');
+                    musicPlayerContainer.classList.add('music-player-maximized');
                 }
             }
 
+            function startVisualizer() {
+                if (visualizerAnimationId) cancelAnimationFrame(visualizerAnimationId);
+                
+                const draw = () => {
+                    if (!canvas) return;
+                    // Ajuste para ecrãs de alta densidade
+                    const dpr = window.devicePixelRatio || 1;
+                    canvas.width = canvas.offsetWidth * dpr;
+                    canvas.height = canvas.offsetHeight * dpr;
+                    canvasCtx.scale(dpr, dpr);
+
+                    canvasCtx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+                    
+                    const barCount = 16;
+                    const barWidth = (canvas.offsetWidth / barCount) * 0.5;
+                    const spaceWidth = (canvas.offsetWidth / barCount) * 0.5;
+                    const maxBarHeight = canvas.offsetHeight * 0.9;
+                    
+                    canvasCtx.lineWidth = barWidth;
+                    canvasCtx.lineCap = 'round'; // Cantos arredondados
+
+                    for (let i = 0; i < barCount; i++) {
+                        // Função de seno para criar um movimento mais orgânico e distinto
+                        const barHeight = (Math.sin(i * 0.5 + Date.now() * 0.008) * 0.5 + 0.5) * maxBarHeight + (canvas.offsetHeight * 0.05);
+                        const x = i * (barWidth + spaceWidth) + (barWidth + spaceWidth) / 2;
+                        const y1 = canvas.offsetHeight;
+                        const y2 = canvas.offsetHeight - barHeight;
+                        
+                        // Gradiente roxo inspirado na imagem
+                        const gradient = canvasCtx.createLinearGradient(x, y1, x, y2);
+                        gradient.addColorStop(0, '#8B5CF6'); // Roxo
+                        gradient.addColorStop(1, '#C4B5FD'); // Roxo claro
+                        canvasCtx.strokeStyle = gradient;
+
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(x, y1);
+                        canvasCtx.lineTo(x, y2);
+                        canvasCtx.stroke();
+                    }
+                    
+                    visualizerAnimationId = requestAnimationFrame(draw);
+                };
+                draw();
+            }
+
+            function stopVisualizer() {
+                if (visualizerAnimationId) {
+                    cancelAnimationFrame(visualizerAnimationId);
+                    visualizerAnimationId = null;
+                    if(canvas) {
+                        const dpr = window.devicePixelRatio || 1;
+                        setTimeout(() => canvasCtx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr), 100);
+                    }
+                }
+            }
 
             // --- Event Listeners ---
             startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
@@ -720,30 +879,27 @@
             } else {
                 shareBtn.style.display = 'none';
             }
-
-            // --- NOVO: Event Listeners de Música ---
+            
             loadMusicBtn.addEventListener('click', () => {
-                if (youtubeUrlInput.value) {
-                    loadYouTubeMusic(youtubeUrlInput.value);
-                }
+                if (youtubeUrlInput.value) loadYouTubeMusic(youtubeUrlInput.value);
             });
-             youtubeUrlInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && youtubeUrlInput.value) {
-                    loadYouTubeMusic(youtubeUrlInput.value);
-                }
+            youtubeUrlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && youtubeUrlInput.value) loadYouTubeMusic(youtubeUrlInput.value);
             });
             volumeSlider.addEventListener('input', (e) => {
                 if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
                     ytPlayer.setVolume(e.target.value);
-                    saveState(); // Salva o volume ao alterar
                 }
             });
-
-
+            expandPlayerBtn.addEventListener('click', () => {
+                setMusicPlayerView('maximized');
+            });
+            
             // --- Inicialização ---
             loadState();
             renderTasks();
             resetTimer('focus');
+            lucide.createIcons();
         });
     </script>
 </body>
