@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foco Total - Pomodoro</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- Favicon Emoji -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍅</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100%22><text y=%22.9em%22 font-size=%2290%22>🍅</text></svg>">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -25,7 +21,7 @@
             padding: 20px;
             box-sizing: border-box;
         }
-       
+        
         .device-shell {
             background-color: #1F2937;
             border-radius: 2.5rem;
@@ -64,7 +60,7 @@
         .task-item.completed .task-name {
             text-decoration: line-through;
         }
-       
+        
         #timer-display {
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
@@ -112,6 +108,21 @@
         .modal-overlay.visible .modal-content {
             transform: scale(1);
         }
+        /* Estilo para o player de música e slider de volume */
+        #music-player-container {
+            background-color: #111827;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        /* Esconde visualmente o player do YouTube */
+        #yt-player {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+        }
     </style>
 </head>
 <body>
@@ -146,8 +157,20 @@
                 <button id="add-task-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm flex-shrink-0">Add</button>
             </div>
         </div>
-
-        <div class="space-y-2 mt-auto">
+        
+        <div id="music-player-container">
+            <h3 class="text-base font-semibold text-white mb-3 text-center">Música Ambiente</h3>
+            <div class="flex space-x-2">
+                <input type="text" id="youtube-url-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Cole o link do YouTube aqui...">
+                <button id="load-music-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm flex-shrink-0">Carregar</button>
+            </div>
+            <div class="mt-3">
+                <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+             <p id="music-status" class="text-xs text-center text-gray-400 mt-2 truncate">Nenhuma música carregada.</p>
+        </div>
+        <div id="yt-player"></div> <div class="space-y-2 mt-4">
             <button id="start-pause-btn" class="w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg">
                 Iniciar Foco
             </button>
@@ -165,7 +188,6 @@
         </div>
     </div>
 
-    <!-- Modal de Alerta -->
     <div id="alert-modal-overlay" class="modal-overlay">
         <div class="modal-content text-center">
             <p id="alert-modal-message" class="mb-4"></p>
@@ -173,7 +195,6 @@
         </div>
     </div>
 
-    <!-- Modal de Configurações -->
     <div id="settings-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações & Ajuda</h2>
@@ -218,30 +239,49 @@
     </div>
 
     <script>
+        // --- YOUTUBE PLAYER API ---
+        // Carrega a API do Iframe Player do YouTube de forma assíncrona.
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        let ytPlayer;
+        // Esta função é chamada automaticamente pela API do YouTube quando o código é carregado.
+        function onYouTubeIframeAPIReady() {
+            // A inicialização do player será feita quando o usuário carregar uma música.
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const deviceShell = document.getElementById('device-shell');
             const timerDisplay = document.getElementById('timer-display');
             const startPauseBtn = document.getElementById('start-pause-btn');
             const resetBtn = document.getElementById('reset-btn');
             const settingsBtn = document.getElementById('settings-btn');
-            const shareBtn = document.getElementById('share-btn'); // Botão de compartilhar
+            const shareBtn = document.getElementById('share-btn');
             const progressRing = document.getElementById('progress-ring');
             const newTaskInput = document.getElementById('new-task-input');
             const addTaskBtn = document.getElementById('add-task-btn');
             const taskListEl = document.getElementById('task-list');
             const currentTaskDisplay = document.getElementById('current-task-display');
             const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
-           
+            
             const alertModalOverlay = document.getElementById('alert-modal-overlay');
             const alertModalMessage = document.getElementById('alert-modal-message');
             const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
             const settingsModalOverlay = document.getElementById('settings-modal-overlay');
             const settingsSaveBtn = document.getElementById('settings-save-btn');
-           
+            
             const focusDurationInput = document.getElementById('focus-duration');
             const shortBreakDurationInput = document.getElementById('short-break-duration');
             const longBreakDurationInput = document.getElementById('long-break-duration');
             const longBreakIntervalInput = document.getElementById('long-break-interval');
+
+            // --- NOVO: Elementos do Player de Música ---
+            const youtubeUrlInput = document.getElementById('youtube-url-input');
+            const loadMusicBtn = document.getElementById('load-music-btn');
+            const volumeSlider = document.getElementById('volume-slider');
+            const musicStatus = document.getElementById('music-status');
 
             let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
             let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
@@ -258,13 +298,13 @@
                     }
                 }
             };
-           
+            
             const playSound = () => {
                 if (!audioContext) return; 
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
-               
+                
                 const now = audioContext.currentTime;
                 const fundamental = 440; 
                 const duration = 0.1;   
@@ -279,7 +319,7 @@
                     oscillator.type = 'triangle';
                     oscillator.frequency.setValueAtTime(fundamental * (i % 2 === 0 ? 1.5 : 2), now + i * gap);
                     gainNode.gain.setValueAtTime(0.15, now + i * gap);
-                   
+                    
                     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + i * gap + duration);
 
                     oscillator.start(now + i * gap);
@@ -305,6 +345,9 @@
                 }
                 isRunning = true;
                 timer = setInterval(updateTimer, 1000);
+                if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                    ytPlayer.playVideo();
+                }
                 updateUI();
             };
 
@@ -312,6 +355,9 @@
                 if (!isRunning) return;
                 isRunning = false;
                 clearInterval(timer);
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                    ytPlayer.pauseVideo();
+                }
                 updateUI();
             };
 
@@ -331,7 +377,6 @@
                     const task = tasks.find(t => t.id === selectedTaskId);
                     if (task) {
                         task.pomodoros++;
-                        // Não marca a tarefa como concluída automaticamente
                     }
                     pomodorosCompleted++;
                     renderTasks();
@@ -383,12 +428,11 @@
                 const offset = circumference - (timeRemaining / totalTime) * circumference;
                 progressRing.style.strokeDasharray = circumference;
                 progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
-               
+                
                 lucide.createIcons();
             };
-           
+            
             const renderTasks = () => {
-                // NOVO: Ordena as tarefas, movendo as concluídas para o final
                 tasks.sort((a, b) => a.completed - b.completed);
 
                 taskListEl.innerHTML = tasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione sua primeira tarefa!</p>' : '';
@@ -396,12 +440,12 @@
                     const taskEl = document.createElement('div');
                     const isSelected = task.id === selectedTaskId;
                     const isCompleted = task.completed;
-                   
+                    
                     taskEl.className = `task-item flex justify-between items-center bg-gray-900 p-2 rounded-lg border-2 border-transparent cursor-pointer ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`;
                     taskEl.dataset.id = task.id;
 
                     const checkboxIcon = isCompleted ? 'check-square' : 'square';
-                   
+                    
                     taskEl.innerHTML = `
                         <div class="flex items-center flex-grow min-w-0">
                             <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-2 flex-shrink-0"><i data-lucide="${checkboxIcon}" class="w-5 h-5"></i></button>
@@ -412,8 +456,7 @@
                             <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     `;
-                   
-                    // Adiciona o listener de clique para selecionar a tarefa (se não estiver concluída)
+                    
                     taskEl.addEventListener('click', (e) => {
                         if (!e.target.closest('.complete-btn') && !e.target.closest('.delete-btn')) {
                             selectTask(task.id);
@@ -454,7 +497,6 @@
                 const task = tasks.find(t => t.id === id);
                 if (task) {
                     task.completed = !task.completed;
-                    // Se a tarefa concluída era a selecionada, deseleciona e procura a próxima incompleta
                     if (task.completed && selectedTaskId === id) {
                         const firstIncompleteTask = tasks.find(t => !t.completed);
                         selectedTaskId = firstIncompleteTask ? firstIncompleteTask.id : null;
@@ -468,7 +510,6 @@
 
             const selectTask = (id) => {
                 const task = tasks.find(t => t.id === id);
-                // Só permite selecionar tarefas não concluídas
                 if (task && !task.completed) {
                     selectedTaskId = id;
                     if (!isRunning && mode !== 'focus') {
@@ -478,7 +519,7 @@
                     }
                 }
             };
-           
+            
             const updateCurrentTaskDisplay = () => {
                 const task = tasks.find(t => t.id === selectedTaskId);
                 currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
@@ -497,6 +538,11 @@
                 localStorage.setItem('pomodoroTasks', JSON.stringify(tasks));
                 localStorage.setItem('pomodoroSelectedTaskId', JSON.stringify(selectedTaskId));
                 localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
+                // NOVO: Salva a URL da música e o volume
+                if (ytPlayer) {
+                    localStorage.setItem('pomodoroMusicUrl', youtubeUrlInput.value);
+                    localStorage.setItem('pomodoroMusicVolume', volumeSlider.value);
+                }
             };
 
             const loadState = () => {
@@ -509,14 +555,12 @@
                 tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
                 selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
                 
-                // Garante que uma tarefa válida e não concluída seja carregada como selecionada
                 if (selectedTaskId) {
                     const task = tasks.find(t => t.id === selectedTaskId);
                     if (!task || task.completed) {
                         selectedTaskId = null;
                     }
                 }
-                // Se nenhuma tarefa estiver selecionada, seleciona a primeira incompleta
                 if (!selectedTaskId) {
                     const firstIncompleteTask = tasks.find(t => !t.completed);
                     if (firstIncompleteTask) {
@@ -525,7 +569,108 @@
                 }
 
                 pomodorosCompleted = JSON.parse(localStorage.getItem('pomodoroCompletedCount')) || 0;
+
+                // NOVO: Carrega as configurações de música
+                const savedUrl = localStorage.getItem('pomodoroMusicUrl');
+                const savedVolume = localStorage.getItem('pomodoroMusicVolume');
+                if (savedUrl) {
+                    youtubeUrlInput.value = savedUrl;
+                    loadYouTubeMusic(savedUrl);
+                }
+                if (savedVolume) {
+                    volumeSlider.value = savedVolume;
+                    if(ytPlayer) ytPlayer.setVolume(savedVolume);
+                }
             };
+
+            // --- NOVO: Funções do Player de Música ---
+            const parseYouTubeUrl = (url) => {
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                const match = url.match(regExp);
+                if (match && match[2].length === 11) {
+                    return { type: 'video', id: match[2] };
+                } 
+                const playlistRegExp = /[?&]list=([^#\&\?]+)/;
+                const playlistMatch = url.match(playlistRegExp);
+                if (playlistMatch && playlistMatch[1]) {
+                    return { type: 'playlist', id: playlistMatch[1] };
+                }
+                return null;
+            };
+
+            const loadYouTubeMusic = (url) => {
+                const content = parseYouTubeUrl(url);
+                if (!content) {
+                    showModal(alertModalOverlay, 'URL do YouTube inválida. Use um link de vídeo ou playlist.');
+                    return;
+                }
+
+                const playerVars = {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'modestbranding': 1,
+                    'loop': 1,
+                };
+                
+                const loadOptions = {
+                    playerVars: playerVars
+                };
+
+                if (content.type === 'video') {
+                    loadOptions.videoId = content.id;
+                } else { // playlist
+                    loadOptions.playerVars.listType = 'playlist';
+                    loadOptions.playerVars.list = content.id;
+                }
+
+                if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+                    ytPlayer.destroy();
+                }
+
+                ytPlayer = new YT.Player('yt-player', {
+                    height: '1',
+                    width: '1',
+                    ...loadOptions,
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            };
+            
+            function onPlayerReady(event) {
+                event.target.setVolume(volumeSlider.value);
+                if (isRunning) {
+                    event.target.playVideo();
+                }
+                // Atualiza o status com o nome do vídeo/playlist
+                let title = "Música carregada";
+                if(event.target.getVideoData) {
+                    title = event.target.getVideoData().title || title;
+                }
+                musicStatus.textContent = title;
+                musicStatus.title = title; // Para ver o nome completo no hover
+            }
+
+            function onPlayerStateChange(event) {
+                if (event.data === YT.PlayerState.ENDED) {
+                    // Se for um vídeo único, reinicia para criar um loop
+                    const content = parseYouTubeUrl(youtubeUrlInput.value);
+                    if (content && content.type === 'video') {
+                         ytPlayer.seekTo(0);
+                         ytPlayer.playVideo();
+                    }
+                }
+                 if (event.data === YT.PlayerState.PLAYING) {
+                    let title = "Tocando...";
+                    if(event.target.getVideoData) {
+                        title = event.target.getVideoData().title || title;
+                    }
+                    musicStatus.textContent = title;
+                    musicStatus.title = title;
+                }
+            }
+
 
             // --- Event Listeners ---
             startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
@@ -560,7 +705,6 @@
                 }
             });
             
-            // NOVO: Lógica do botão de compartilhar
             if (navigator.share) {
                 shareBtn.addEventListener('click', async () => {
                     try {
@@ -574,9 +718,27 @@
                     }
                 });
             } else {
-                // Esconde o botão se a API de compartilhamento não for suportada
                 shareBtn.style.display = 'none';
             }
+
+            // --- NOVO: Event Listeners de Música ---
+            loadMusicBtn.addEventListener('click', () => {
+                if (youtubeUrlInput.value) {
+                    loadYouTubeMusic(youtubeUrlInput.value);
+                }
+            });
+             youtubeUrlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && youtubeUrlInput.value) {
+                    loadYouTubeMusic(youtubeUrlInput.value);
+                }
+            });
+            volumeSlider.addEventListener('input', (e) => {
+                if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
+                    ytPlayer.setVolume(e.target.value);
+                    saveState(); // Salva o volume ao alterar
+                }
+            });
+
 
             // --- Inicialização ---
             loadState();
