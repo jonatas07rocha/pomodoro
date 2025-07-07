@@ -440,12 +440,17 @@
                 updateUI();
             };
 
+            // --- ALTERAÇÃO 1: PAUSAR MÚSICA AO FIM DO CICLO ---
             const updateTimer = () => {
                 if (timeRemaining > 0) timeRemaining--;
                 updateUI();
                 if (timeRemaining <= 0) {
                     clearInterval(timer);
                     playSound();
+                    // Pausa a música ao fim da sessão para servir como um alerta adicional.
+                    if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                        ytPlayer.pauseVideo();
+                    }
                     switchMode();
                 }
             };
@@ -466,9 +471,14 @@
                 resetTimer();
             };
 
+            // --- ALTERAÇÃO 2: PAUSAR MÚSICA AO RESETAR ---
             const resetTimer = (forceMode = null) => {
                 clearInterval(timer);
                 isRunning = false;
+                // Pausa a música ao resetar o timer, se ela estiver tocando.
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function' && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === 1) {
+                    ytPlayer.pauseVideo();
+                }
                 mode = forceMode || mode;
                 timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
                 totalTime = timeRemaining;
@@ -501,6 +511,7 @@
                 progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
                 startPauseBtn.style.boxShadow = `0 0 15px ${modeShadowColor}`;
                 startPauseBtn.setAttribute('class', `w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg bg-${modeColor}-600 hover:bg-${modeColor}-700`);
+                // O texto do botão já alterna entre Iniciar e Pausar dinamicamente.
                 startPauseBtn.textContent = isRunning ? 'Pausar' : (mode === 'focus' ? 'Iniciar Foco' : 'Iniciar Pausa');
 
                 const circumference = 2 * Math.PI * 45;
