@@ -10,8 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- Favicon Emoji -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100%22><text y=%22.9em%22 font-size=%2290%22>🍅</text></svg>">
+    <!-- Favicon SVG Personalizado (Tomate) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22><circle cx=%2212%22 cy=%2213%22 r=%229%22 fill=%22%23FF6347%22/><path d=%22M16 8c-2 2-4 2-6 0%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/><path d=%22M12 8V2l2 2%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/></svg>">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -157,6 +157,7 @@
             transform: translateY(-20px);
             visibility: hidden;
             height: 0;
+            pointer-events: none;
         }
         
         .music-player-maximized #music-visualizer-view {
@@ -164,6 +165,7 @@
             transform: translateY(20px);
             visibility: hidden;
             height: 0;
+            pointer-events: none;
         }
 
         #sound-wave-canvas {
@@ -721,7 +723,12 @@
             function onPlayerStateChange(event) {
                 if (event.data === YT.PlayerState.PLAYING) {
                     setMusicPlayerView('minimized');
-                    startVisualizer();
+                    // CORREÇÃO: Atraso para iniciar o visualizador
+                    setTimeout(() => {
+                        if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                            startVisualizer();
+                        }
+                    }, 400); // Corresponde à duração da transição CSS
                     updateMusicStatus();
                 } else {
                     stopVisualizer();
