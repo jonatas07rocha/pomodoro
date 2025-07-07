@@ -75,10 +75,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const song = songList[currentSongIndex];
         if (song) {
             audioPlayer.src = song.url;
+            console.log("Attempting to set audio source to:", song.url); // Log the URL being set
             musicStatus.textContent = `${song.title} - ${song.artist}`;
             musicStatus.title = `${song.title} - ${song.artist}`;
             localStorage.setItem('pomodoroLastSongIndex', currentSongIndex);
             updateMusicStatusMarquee();
+        } else {
+            console.warn("No song found for index:", index); // Log if song is not found
         }
     }
     
@@ -247,6 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isAudioInitialized) {
             initAudioSystem();
         }
+
+        console.log("Audio player source before play():", audioPlayer.src); // Log the source right before playing
 
         if (audioPlayer.src && audioPlayer.paused) {
             // Adicionado try-catch para o play() para depuração
