@@ -11,7 +11,7 @@
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <!-- Favicon SVG Personalizado (Tomate) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22><circle cx=%2212%22 cy=%2213%22 r=%229%22 fill=%22%23FF6347%22/><path d=%22M16 8c-2 2-4 2-6 0%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/><path d=%22M12 8V2l2 2%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/></svg>">
+    <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22><circle cx=%2212%22 cy=%2213%22 r=%229%22 fill=%22%23FF6347%22/><path d=%22M16 8c-2 2-4 2-6 0%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/><path d=%22M12 8V2l2 2%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/></svg>">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -284,6 +284,7 @@
     <div id="settings-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações & Ajuda</h2>
+            
             <div class="mb-4">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Duração (minutos)</h3>
                 <div class="grid grid-cols-3 gap-2 text-center">
@@ -301,6 +302,17 @@
                     </div>
                 </div>
             </div>
+
+            <!-- NOVA SEÇÃO: Notificações -->
+            <div class="mb-4">
+                <h3 class="text-base font-semibold text-blue-400 mb-3">Notificações</h3>
+                <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                    <p class="text-sm text-gray-300">Avisar ao fim de cada ciclo.</p>
+                    <button id="enable-notifications-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs">Ativar</button>
+                </div>
+                <p id="notifications-status-msg" class="text-xs text-gray-500 mt-2 pl-1"></p>
+            </div>
+            
             <div class="mb-4">
                <h3 class="text-base font-semibold text-blue-400 mb-3">Outros Ajustes</h3>
                <div>
@@ -308,6 +320,7 @@
                     <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
                </div>
             </div>
+
             <div class="flex-grow">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Guia Rápido</h3>
                 <ul class="list-disc list-inside text-gray-300 space-y-1 text-xs">
@@ -334,7 +347,7 @@
         function onYouTubeIframeAPIReady() {}
 
         document.addEventListener('DOMContentLoaded', () => {
-            const deviceShell = document.getElementById('device-shell');
+            const favicon = document.getElementById('favicon');
             const timerDisplay = document.getElementById('timer-display');
             const startPauseBtn = document.getElementById('start-pause-btn');
             const resetBtn = document.getElementById('reset-btn');
@@ -346,9 +359,11 @@
             const taskListEl = document.getElementById('task-list');
             const currentTaskDisplay = document.getElementById('current-task-display');
             const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
+            
             const alertModalOverlay = document.getElementById('alert-modal-overlay');
             const alertModalMessage = document.getElementById('alert-modal-message');
             const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+            
             const settingsModalOverlay = document.getElementById('settings-modal-overlay');
             const settingsSaveBtn = document.getElementById('settings-save-btn');
             const focusDurationInput = document.getElementById('focus-duration');
@@ -365,11 +380,59 @@
             const canvas = document.getElementById('sound-wave-canvas');
             const canvasCtx = canvas.getContext('2d');
 
+            // --- NOVO: Elementos de Notificação ---
+            const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+            const notificationsStatusMsg = document.getElementById('notifications-status-msg');
+
             let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
             let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
             let audioContext; 
             let visualizerAnimationId;
+
+            // --- NOVO: Lógica de Notificações ---
+            const showNotification = (title, body) => {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    const options = {
+                        body: body + (task && mode === 'focus' ? `\nTarefa atual: ${task.name}` : ''),
+                        icon: favicon.href 
+                    };
+                    new Notification(title, options);
+                }
+            };
+
+            const updateNotificationStatusUI = () => {
+                if (!('Notification' in window)) {
+                    enableNotificationsBtn.disabled = true;
+                    notificationsStatusMsg.textContent = 'Este navegador não suporta notificações.';
+                    enableNotificationsBtn.style.display = 'none';
+                    return;
+                }
+                
+                enableNotificationsBtn.className = 'text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs';
+
+                switch(Notification.permission) {
+                    case 'granted':
+                        enableNotificationsBtn.textContent = 'Ativadas';
+                        enableNotificationsBtn.disabled = true;
+                        enableNotificationsBtn.classList.add('bg-green-600', 'cursor-not-allowed');
+                        notificationsStatusMsg.textContent = 'Você receberá notificações.';
+                        break;
+                    case 'denied':
+                        enableNotificationsBtn.textContent = 'Bloqueadas';
+                        enableNotificationsBtn.disabled = true;
+                        enableNotificationsBtn.classList.add('bg-red-600', 'cursor-not-allowed');
+                        notificationsStatusMsg.textContent = 'Você bloqueou as notificações. Altere nas configurações do seu navegador para reativar.';
+                        break;
+                    default: // 'default'
+                        enableNotificationsBtn.textContent = 'Ativar';
+                        enableNotificationsBtn.disabled = false;
+                        enableNotificationsBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                        notificationsStatusMsg.textContent = 'Clique em "Ativar" para permitir as notificações.';
+                        break;
+                }
+            };
 
             const initAudioContext = () => {
                 if (!audioContext) {
@@ -419,6 +482,14 @@
                     showModal(alertModalOverlay, 'Por favor, selecione uma tarefa para iniciar o foco.');
                     return;
                 }
+                
+                // Pede permissão de notificação na primeira vez que o timer inicia
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        updateNotificationStatusUI();
+                    });
+                }
+
                 isRunning = true;
                 timer = setInterval(updateTimer, 1000);
                 if (ytPlayer && typeof ytPlayer.playVideo === 'function' && ytPlayer.getPlayerState() !== 1) {
@@ -439,24 +510,27 @@
                 }
                 updateUI();
             };
-
-            // --- ALTERAÇÃO 1: PAUSAR MÚSICA AO FIM DO CICLO ---
+            
             const updateTimer = () => {
                 if (timeRemaining > 0) timeRemaining--;
                 updateUI();
                 if (timeRemaining <= 0) {
                     clearInterval(timer);
-                    playSound();
-                    // Pausa a música ao fim da sessão para servir como um alerta adicional.
-                    if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
-                        ytPlayer.pauseVideo();
-                    }
                     switchMode();
                 }
             };
 
+            // --- ATUALIZADO: switchMode agora dispara sons e notificações ---
             const switchMode = () => {
+                playSound();
+                if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+                    ytPlayer.pauseVideo();
+                }
+
                 isRunning = false;
+                let notificationTitle = '';
+                let notificationBody = '';
+
                 if (mode === 'focus') {
                     const task = tasks.find(t => t.id === selectedTaskId);
                     if (task) {
@@ -465,17 +539,24 @@
                     pomodorosCompleted++;
                     renderTasks();
                     mode = (pomodorosCompleted % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
+                    
+                    notificationTitle = 'Sessão de Foco Concluída!';
+                    notificationBody = mode === 'longBreak' 
+                        ? `Hora de uma pausa longa de ${settings.longBreakDuration} minutos.` 
+                        : `Faça uma pausa curta de ${settings.shortBreakDuration} minutos.`;
                 } else {
                     mode = 'focus';
+                    notificationTitle = 'Pausa Finalizada!';
+                    notificationBody = `Vamos voltar ao foco por ${settings.focusDuration} minutos.`;
                 }
+                
+                showNotification(notificationTitle, notificationBody);
                 resetTimer();
             };
 
-            // --- ALTERAÇÃO 2: PAUSAR MÚSICA AO RESETAR ---
             const resetTimer = (forceMode = null) => {
                 clearInterval(timer);
                 isRunning = false;
-                // Pausa a música ao resetar o timer, se ela estiver tocando.
                 if (ytPlayer && typeof ytPlayer.pauseVideo === 'function' && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === 1) {
                     ytPlayer.pauseVideo();
                 }
@@ -511,7 +592,6 @@
                 progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
                 startPauseBtn.style.boxShadow = `0 0 15px ${modeShadowColor}`;
                 startPauseBtn.setAttribute('class', `w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg bg-${modeColor}-600 hover:bg-${modeColor}-700`);
-                // O texto do botão já alterna entre Iniciar e Pausar dinamicamente.
                 startPauseBtn.textContent = isRunning ? 'Pausar' : (mode === 'focus' ? 'Iniciar Foco' : 'Iniciar Pausa');
 
                 const circumference = 2 * Math.PI * 45;
@@ -734,12 +814,11 @@
             function onPlayerStateChange(event) {
                 if (event.data === YT.PlayerState.PLAYING) {
                     setMusicPlayerView('minimized');
-                    // CORREÇÃO: Atraso para iniciar o visualizador
                     setTimeout(() => {
                         if (ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
                             startVisualizer();
                         }
-                    }, 400); // Corresponde à duração da transição CSS
+                    }, 400); 
                     updateMusicStatus();
                 } else {
                     stopVisualizer();
@@ -798,7 +877,6 @@
                 
                 const draw = () => {
                     if (!canvas) return;
-                    // Ajuste para ecrãs de alta densidade
                     const dpr = window.devicePixelRatio || 1;
                     canvas.width = canvas.offsetWidth * dpr;
                     canvas.height = canvas.offsetHeight * dpr;
@@ -812,19 +890,17 @@
                     const maxBarHeight = canvas.offsetHeight * 0.9;
                     
                     canvasCtx.lineWidth = barWidth;
-                    canvasCtx.lineCap = 'round'; // Cantos arredondados
+                    canvasCtx.lineCap = 'round';
 
                     for (let i = 0; i < barCount; i++) {
-                        // Função de seno para criar um movimento mais orgânico e distinto
                         const barHeight = (Math.sin(i * 0.5 + Date.now() * 0.008) * 0.5 + 0.5) * maxBarHeight + (canvas.offsetHeight * 0.05);
                         const x = i * (barWidth + spaceWidth) + (barWidth + spaceWidth) / 2;
                         const y1 = canvas.offsetHeight;
                         const y2 = canvas.offsetHeight - barHeight;
                         
-                        // Gradiente roxo inspirado na imagem
                         const gradient = canvasCtx.createLinearGradient(x, y1, x, y2);
-                        gradient.addColorStop(0, '#8B5CF6'); // Roxo
-                        gradient.addColorStop(1, '#C4B5FD'); // Roxo claro
+                        gradient.addColorStop(0, '#8B5CF6');
+                        gradient.addColorStop(1, '#C4B5FD');
                         canvasCtx.strokeStyle = gradient;
 
                         canvasCtx.beginPath();
@@ -852,7 +928,10 @@
             // --- Event Listeners ---
             startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
             resetBtn.addEventListener('click', () => resetTimer(mode));
-            settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
+            settingsBtn.addEventListener('click', () => {
+                updateNotificationStatusUI(); // Atualiza o status ao abrir o modal
+                showModal(settingsModalOverlay);
+            });
             settingsSaveBtn.addEventListener('click', () => {
                 settings.focusDuration = parseInt(focusDurationInput.value) || 25;
                 settings.shortBreakDuration = parseInt(shortBreakDurationInput.value) || 5;
@@ -912,12 +991,20 @@
             expandPlayerBtn.addEventListener('click', () => {
                 setMusicPlayerView('maximized');
             });
+            enableNotificationsBtn.addEventListener('click', () => {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(() => {
+                        updateNotificationStatusUI();
+                    });
+                }
+            });
             
             // --- Inicialização ---
             loadState();
             renderTasks();
             resetTimer('focus');
             lucide.createIcons();
+            updateNotificationStatusUI(); // Checa o status inicial ao carregar a página
         });
     </script>
 </body>
