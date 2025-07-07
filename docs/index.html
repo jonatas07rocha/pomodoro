@@ -217,15 +217,12 @@
         </div>
         
         <div id="music-player-container" class="music-player-maximized">
-            <!-- Seletor de música que substitui o input do YouTube -->
             <div id="music-selector-view">
                 <h3 class="text-base font-semibold text-white mb-3 text-center">Música Ambiente</h3>
                 <select id="music-select" class="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none">
-                    <!-- As opções de música serão adicionadas aqui via JS -->
                 </select>
             </div>
 
-            <!-- Visualizador de música (permanece o mesmo) -->
             <div id="music-visualizer-view">
                 <div class="marquee-container">
                     <p id="music-status" class="marquee-text text-sm text-center text-gray-300 truncate">Nenhuma música carregada.</p>
@@ -233,7 +230,6 @@
                 <canvas id="sound-wave-canvas"></canvas>
             </div>
             
-            <!-- Controle de volume (permanece o mesmo) -->
             <div class="mt-3">
                 <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
                 <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
@@ -324,7 +320,6 @@
         </div>
     </div>
 
-    <!-- Player de áudio HTML5, invisível -->
     <audio id="audio-player" loop crossorigin="anonymous"></audio>
 
     <script>
@@ -364,7 +359,6 @@
             const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
             const notificationsStatusMsg = document.getElementById('notifications-status-msg');
 
-            // Elementos do novo player de áudio
             const audioPlayer = document.getElementById('audio-player');
             const musicSelect = document.getElementById('music-select');
 
@@ -380,10 +374,8 @@
             let audioSource;
             let dataArray;
             let visualizerAnimationId;
+            let isAudioInitialized = false; // Flag para controlar a inicialização
 
-            // ===================================================================
-            // Lista de músicas atualizada com os arquivos do seu GitHub
-            // ===================================================================
             const songList = [
                 {
                     title: 'Breathe Chill Lofi Beats',
@@ -435,46 +427,33 @@
             }
             
             // --- Funções da Web Audio API e Visualizador ---
-            const initAudioContext = () => {
-                if (!audioContext) {
-                    try {
-                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    } catch (e) {
-                        console.error("Web Audio API is not supported in this browser.");
-                        return;
-                    }
-                }
-                // Cria o analisador e a fonte de áudio apenas uma vez
-                if (!analyser) {
+            function initAudioSystem() {
+                if (isAudioInitialized) return;
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     analyser = audioContext.createAnalyser();
-                    analyser.fftSize = 64; // Menos barras, melhor para um canvas pequeno
+                    audioSource = audioContext.createMediaElementSource(audioPlayer);
+                    
+                    audioSource.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    
+                    analyser.fftSize = 64;
                     const bufferLength = analyser.frequencyBinCount;
                     dataArray = new Uint8Array(bufferLength);
-                    analyser.connect(audioContext.destination);
+                    
+                    isAudioInitialized = true;
+                    console.log("Audio system initialized successfully.");
+                } catch (e) {
+                    console.error("Could not initialize audio system:", e);
                 }
-                if (!audioSource) {
-                    try {
-                        audioSource = audioContext.createMediaElementSource(audioPlayer);
-                        audioSource.connect(analyser);
-                    } catch(e) {
-                        if (e.name !== 'InvalidStateError') {
-                             console.error("Error creating audio source:", e);
-                        }
-                    }
-                }
-            };
+            }
             
             function startVisualizer() {
+                if (!isAudioInitialized) return;
                 if (visualizerAnimationId) cancelAnimationFrame(visualizerAnimationId);
-                
-                if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
 
                 const draw = () => {
                     visualizerAnimationId = requestAnimationFrame(draw);
-
-                    if (!analyser) return;
                     analyser.getByteFrequencyData(dataArray);
 
                     const dpr = window.devicePixelRatio || 1;
@@ -493,7 +472,6 @@
 
                     for (let i = 0; i < bufferLength; i++) {
                         const barHeight = (dataArray[i] / 255) * canvasHeight;
-
                         const gradient = canvasCtx.createLinearGradient(0, canvasHeight, 0, 0);
                         gradient.addColorStop(0, '#8B5CF6');
                         gradient.addColorStop(0.5, '#A78BFA');
@@ -501,7 +479,6 @@
                         
                         canvasCtx.fillStyle = gradient;
                         canvasCtx.fillRect(x, canvasHeight - barHeight, barWidth, barHeight);
-
                         x += barWidth + barSpacing;
                     }
                 };
@@ -564,7 +541,7 @@
             };
             
             const playSound = () => {
-                if (!audioContext) return; 
+                if (!isAudioInitialized) return; 
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
@@ -595,7 +572,6 @@
             const hideModal = (modalOverlay) => modalOverlay.classList.remove('visible');
 
             const startTimer = () => {
-                initAudioContext(); 
                 if (isRunning) return;
                 if (!selectedTaskId && mode === 'focus') {
                     showModal(alertModalOverlay, 'Por favor, selecione uma tarefa para iniciar o foco.');
@@ -890,7 +866,12 @@
             }
 
             // --- Event Listeners ---
-            startPauseBtn.addEventListener('click', () => { isRunning ? pauseTimer() : startTimer(); });
+            startPauseBtn.addEventListener('click', () => {
+                if (!isAudioInitialized) {
+                    initAudioSystem();
+                }
+                isRunning ? pauseTimer() : startTimer();
+            });
             resetBtn.addEventListener('click', () => resetTimer(mode));
             settingsBtn.addEventListener('click', () => {
                 updateNotificationStatusUI();
@@ -941,8 +922,10 @@
                 shareBtn.style.display = 'none';
             }
             
-            // Listeners do novo player
             musicSelect.addEventListener('change', (e) => {
+                if (!isAudioInitialized) {
+                    initAudioSystem();
+                }
                 loadSong(e.target.value);
                 if (isRunning) {
                     audioPlayer.play();
