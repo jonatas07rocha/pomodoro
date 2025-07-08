@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const expandPlayerBtn = document.getElementById('expand-player-btn');
     const canvas = document.getElementById('sound-wave-canvas');
     const canvasCtx = canvas.getContext('2d');
-    const toggleRandomBtn = document.getElementById('toggle-random-btn'); // Novo elemento para o botão de modo aleatório
+    const toggleRandomBtn = document.getElementById('toggle-random-btn');
 
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
     const notificationsStatusMsg = document.getElementById('notifications-status-msg');
@@ -43,7 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
     let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
     let currentSongIndex = 0;
-    let isRandomMode = false; // Novo estado para o modo aleatório
+    let isRandomMode = false;
+    let isFading = false; // Flag para controlar o efeito de fade
 
     // Variáveis da Web Audio API
     let audioContext; 
@@ -51,9 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let audioSource;
     let dataArray;
     let visualizerAnimationId;
-    let isAudioInitialized = false; // Flag para controlar a inicialização
+    let isAudioInitialized = false;
 
-    // Lista de músicas atualizada com todas as faixas do repositório
+    // Lista de músicas
     const songList = [
         {
             title: 'Breathe Chill Lofi Beats',
@@ -112,16 +113,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    // --- Funções do Player de Áudio ---
+    // --- Funções do Player de Áudio e Fade ---
+    function fadeTransition(newSongLoader) {
+        if (isFading || audioPlayer.paused) {
+            // Se não estiver em fade mas estiver pausado, apenas carrega e toca sem fade
+            if (!isFading) {
+                newSongLoader();
+                if(isRunning) audioPlayer.play().catch(e => console.error("Error playing song:", e));
+            }
+            return;
+        }
+        isFading = true;
+    
+        const targetVolume = volumeSlider.value / 100;
+        const fadeDuration = 1000; // 1 segundo de fade
+        const steps = 50;
+        const stepDuration = fadeDuration / steps;
+        const volumeStep = targetVolume / steps;
+    
+        // --- FADE OUT ---
+        const fadeOutInterval = setInterval(() => {
+            let newVol = audioPlayer.volume - volumeStep;
+            if (newVol < 0) newVol = 0;
+            audioPlayer.volume = newVol;
+    
+            if (audioPlayer.volume <= 0) {
+                clearInterval(fadeOutInterval);
+                audioPlayer.pause();
+                
+                // --- CARREGA NOVA MÚSICA ---
+                newSongLoader();
+    
+                // --- FADE IN ---
+                // Usa 'canplay' para garantir que a mídia esteja pronta
+                audioPlayer.addEventListener('canplay', () => {
+                    audioPlayer.play().then(() => {
+                        startVisualizer(); // Reinicia o visualizador para a nova música
+                        const fadeInInterval = setInterval(() => {
+                            let newVol = audioPlayer.volume + volumeStep;
+                            if (newVol > targetVolume) newVol = targetVolume;
+                            audioPlayer.volume = newVol;
+    
+                            if (audioPlayer.volume >= targetVolume) {
+                                clearInterval(fadeInInterval);
+                                isFading = false;
+                            }
+                        }, stepDuration);
+                    }).catch(e => {
+                        console.error("Error on play during fade in:", e);
+                        audioPlayer.volume = targetVolume; // Reseta o volume em caso de erro
+                        isFading = false;
+                    });
+                }, { once: true }); // Importante: usar { once: true } para evitar múltiplos listeners
+            }
+        }, stepDuration);
+    }
+
     function populateMusicSelector() {
-        musicSelect.innerHTML = ''; // Limpa as opções existentes
+        musicSelect.innerHTML = '';
         songList.forEach((song, index) => {
             const option = document.createElement('option');
             option.value = index;
             option.textContent = `${song.title} - ${song.artist}`;
             musicSelect.appendChild(option);
         });
-        // Seleciona a música atual se houver
         musicSelect.value = currentSongIndex;
     }
 
@@ -130,21 +185,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const song = songList[currentSongIndex];
         if (song) {
             audioPlayer.src = song.url;
-            console.log("Attempting to set audio source to:", song.url); // Log the URL being set
             musicStatus.textContent = `${song.title} - ${song.artist}`;
             musicStatus.title = `${song.title} - ${song.artist}`;
             localStorage.setItem('pomodoroLastSongIndex', currentSongIndex);
             updateMusicStatusMarquee();
         } else {
-            console.warn("No song found for index:", index); // Log if song is not found
+            console.warn("No song found for index:", index);
             musicStatus.textContent = "Nenhuma música carregada.";
             musicStatus.title = "Nenhuma música carregada.";
-            audioPlayer.src = ''; // Limpa a fonte do áudio
+            audioPlayer.src = '';
             stopVisualizer();
         }
     }
 
-    function playRandomSong() {
+    function loadNextRandomSong() {
         if (songList.length === 0) {
             console.warn("No songs in the list to play randomly.");
             return;
@@ -152,23 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let randomIndex;
         do {
             randomIndex = Math.floor(Math.random() * songList.length);
-        } while (randomIndex === currentSongIndex && songList.length > 1); // Evita repetir a mesma música se houver mais de uma
+        } while (randomIndex === currentSongIndex && songList.length > 1);
         
         loadSong(randomIndex);
-        if (isRunning) { // Tenta tocar apenas se o timer estiver rodando
-            audioPlayer.play().then(() => {
-                console.log("Random audio started successfully.");
-                setMusicPlayerView('minimized');
-                startVisualizer();
-            }).catch(error => {
-                console.error("Error playing random audio:", error);
-                if (error.name === "NotAllowedError" || error.name === "NotSupportedError") {
-                    showModal(alertModalOverlay, 'O navegador bloqueou a reprodução automática. Por favor, clique em "Pausar" e "Iniciar Foco" novamente para ativar o som.');
-                } else {
-                    showModal(alertModalOverlay, `Erro ao reproduzir áudio aleatório: ${error.message}. Verifique o console para mais detalhes.`);
-                }
-            });
-        }
     }
     
     // --- Funções da Web Audio API e Visualizador ---
@@ -194,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function startVisualizer() {
-        if (!isAudioInitialized) return;
+        if (!isAudioInitialized || !canvas) return;
         if (visualizerAnimationId) cancelAnimationFrame(visualizerAnimationId);
 
         const draw = () => {
@@ -332,17 +372,16 @@ document.addEventListener('DOMContentLoaded', () => {
         isRunning = true;
         timer = setInterval(updateTimer, 1000);
         
-        // Chame initAudioSystem() antes de tentar tocar
         if (!isAudioInitialized) {
             initAudioSystem();
         }
 
-        console.log("Audio player source before play():", audioPlayer.src); // Log the source right before playing
-
-        if (audioPlayer.paused) { // Verifica se o áudio está pausado antes de tentar tocar
+        if (audioPlayer.paused) {
             if (isRandomMode) {
-                playRandomSong();
-            } else if (audioPlayer.src) { // Só tenta tocar se houver uma fonte definida
+                loadNextRandomSong(); // Apenas carrega a música
+            }
+            
+            if (audioPlayer.src) {
                 audioPlayer.play().then(() => {
                     console.log("Audio started successfully.");
                     setMusicPlayerView('minimized');
@@ -381,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const switchMode = () => {
-        playSound(); // Este é o som de notificação, não a música de fundo
+        playSound();
         audioPlayer.pause();
         stopVisualizer();
 
@@ -567,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
         localStorage.setItem('pomodoroMusicVolume', volumeSlider.value);
         localStorage.setItem('pomodoroLastSongIndex', currentSongIndex);
-        localStorage.setItem('pomodoroIsRandomMode', isRandomMode); // Salva o estado do modo aleatório
+        localStorage.setItem('pomodoroIsRandomMode', isRandomMode);
     };
 
     const loadState = () => {
@@ -599,9 +638,8 @@ document.addEventListener('DOMContentLoaded', () => {
         volumeSlider.value = savedVolume;
         audioPlayer.volume = savedVolume / 100;
 
-        // Carrega o estado do modo aleatório
         isRandomMode = localStorage.getItem('pomodoroIsRandomMode') === 'true'; 
-        updateRandomModeButtonUI(); // Atualiza o texto do botão
+        updateRandomModeButtonUI();
 
         const lastSongIndex = localStorage.getItem('pomodoroLastSongIndex') || 0;
         musicSelect.value = lastSongIndex;
@@ -704,20 +742,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     musicSelect.addEventListener('change', (e) => {
-        if (!isAudioInitialized) {
-            initAudioSystem();
-        }
-        // Quando o usuário seleciona uma música, desativa o modo aleatório
+        if (!isAudioInitialized) initAudioSystem();
         isRandomMode = false; 
         updateRandomModeButtonUI();
-        loadSong(e.target.value);
+        const newSongIndex = e.target.value;
         if (isRunning) {
-            audioPlayer.play();
+            fadeTransition(() => loadSong(newSongIndex));
+        } else {
+            loadSong(newSongIndex);
         }
     });
 
     volumeSlider.addEventListener('input', (e) => {
         audioPlayer.volume = e.target.value / 100;
+        if (isFading) { // Se estiver em fade, cancela para evitar conflito
+            isFading = false;
+        }
     });
 
     expandPlayerBtn.addEventListener('click', () => {
@@ -727,20 +767,15 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleRandomBtn.addEventListener('click', () => {
         isRandomMode = !isRandomMode;
         updateRandomModeButtonUI();
-        saveState(); // Salva o novo estado do modo aleatório
-        if (isRandomMode && isRunning && audioPlayer.paused) {
-            playRandomSong(); // Inicia a reprodução aleatória se o timer estiver rodando e o áudio pausado
-        } else if (!isRandomMode && isRunning && audioPlayer.paused) {
-            // Se desativar o modo aleatório, volta para a música selecionada no dropdown
-            loadSong(musicSelect.value);
-            audioPlayer.play();
+        saveState();
+        if (isRandomMode && isRunning) {
+            fadeTransition(loadNextRandomSong);
         }
     });
     
-    // Evento para tocar a próxima música aleatória quando a atual terminar
     audioPlayer.addEventListener('ended', () => {
         if (isRandomMode) {
-            playRandomSong();
+            fadeTransition(loadNextRandomSong);
         }
     });
     
