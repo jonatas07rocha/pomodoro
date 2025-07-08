@@ -136,7 +136,7 @@
         }
         .marquee-text.scrolling {
             display: inline-block;
-            padding-right: 20px;
+            padding-right: 20px; /* Espaço para não emendar o texto */
             animation: marquee 10s linear infinite;
         }
 
@@ -323,7 +323,8 @@
         </div>
     </div>
 
-    <audio id="audio-player" loop crossorigin="anonymous"></audio>
+    <!-- O atributo 'loop' foi removido daqui para permitir a troca de músicas -->
+    <audio id="audio-player" crossorigin="anonymous"></audio>
 
     <!-- Referência ao arquivo JavaScript externo -->
     <script src="script.js"></script>
