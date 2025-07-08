@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const favicon = document.getElementById('favicon');
     const timerDisplay = document.getElementById('timer-display');
     const startPauseBtn = document.getElementById('start-pause-btn');
-    const resetBtn = document.getElementById('reset-btn'); // Revertido para resetBtn
+    const resetBtn = document.getElementById('reset-btn');
     const settingsBtn = document.getElementById('settings-btn');
     const shareBtn = document.getElementById('share-btn');
     const progressRing = document.getElementById('progress-ring');
@@ -377,10 +377,14 @@ document.addEventListener('DOMContentLoaded', () => {
         progressRing.className = `text-${modeColor}-500`;
         progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
     
-        // Lógica para alternar entre ícone de play (preenchido) e pause
+        // Lógica para alternar entre ícones de play e pause (ambos preenchidos)
         if (isRunning) {
-            // Usa Lucide para o ícone de pause
-            startPauseBtn.innerHTML = `<i data-lucide="pause" class="w-8 h-8"></i>`;
+            // Usa um SVG customizado e preenchido para o ícone de pause
+            startPauseBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 3h4v18H6zM14 3h4v18h-4z"></path>
+                </svg>
+            `;
         } else {
             // Usa um SVG customizado e preenchido para o ícone de play
             startPauseBtn.innerHTML = `
@@ -398,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
         progressRing.style.strokeDasharray = circumference;
         progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
     
+        // A chamada abaixo é para os outros ícones da página
         lucide.createIcons();
     };
     
@@ -524,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- EVENT LISTENERS ---
     startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
-    resetBtn.addEventListener('click', () => resetTimer(mode)); // Funcionalidade revertida
+    resetBtn.addEventListener('click', () => resetTimer(mode));
     settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
     settingsSaveBtn.addEventListener('click', () => {
         settings.focusDuration = parseInt(focusDurationInput.value) || 25;
