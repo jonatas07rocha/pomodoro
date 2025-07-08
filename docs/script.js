@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const favicon = document.getElementById('favicon');
     const timerDisplay = document.getElementById('timer-display');
     const startPauseBtn = document.getElementById('start-pause-btn');
-    const resetBtn = document.getElementById('reset-btn');
+    const resetBtn = document.getElementById('reset-btn'); // Revertido para resetBtn
     const settingsBtn = document.getElementById('settings-btn');
     const shareBtn = document.getElementById('share-btn');
     const progressRing = document.getElementById('progress-ring');
@@ -40,10 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const youtubeLinkInput = document.getElementById('youtube-link-input');
     const playLinkBtn = document.getElementById('play-link-btn');
     const musicPlayerContainer = document.getElementById('music-player-container');
-    // Novos elementos para animação
     const canvas = document.getElementById('sound-wave-canvas');
     const canvasCtx = canvas.getContext('2d');
-
 
     // --- ESTADO DA APLICAÇÃO ---
     let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
@@ -56,57 +54,40 @@ document.addEventListener('DOMContentLoaded', () => {
     let visualizerAnimationId;
 
     // --- FUNÇÕES DE ANIMAÇÃO ---
-
-    /**
-     * Inicia o visualizador de ondas sonoras com barras arredondadas.
-     */
     function startVisualizer() {
         if (visualizerAnimationId) cancelAnimationFrame(visualizerAnimationId);
-
-        let barCount = 20; // Aumentado para mais detalhe
+        let barCount = 20;
         let bars = [];
         for (let i = 0; i < barCount; i++) {
-            // Altura inicial aleatória para um início mais natural
             bars.push({ height: Math.random() * 20 + 5, speed: Math.random() * 0.8 + 0.2, direction: 1 });
         }
-
         const draw = () => {
             visualizerAnimationId = requestAnimationFrame(draw);
-            
             const dpr = window.devicePixelRatio || 1;
             const canvasWidth = canvas.offsetWidth;
             const canvasHeight = canvas.offsetHeight;
             canvas.width = canvasWidth * dpr;
             canvas.height = canvasHeight * dpr;
             canvasCtx.scale(dpr, dpr);
-            
             canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-            const barWidth = 6; // Largura fixa para as barras
+            const barWidth = 6;
             const gap = (canvasWidth - barCount * barWidth) / (barCount + 1);
-
-            // Gradiente de cores vibrantes
             const gradient = canvasCtx.createLinearGradient(0, 0, canvasWidth, 0);
-            gradient.addColorStop(0, '#3B82F6'); // Azul
-            gradient.addColorStop(0.5, '#8B5CF6'); // Roxo
-            gradient.addColorStop(1, '#EC4899'); // Rosa
-
+            gradient.addColorStop(0, '#3B82F6');
+            gradient.addColorStop(0.5, '#8B5CF6');
+            gradient.addColorStop(1, '#EC4899');
             canvasCtx.strokeStyle = gradient;
             canvasCtx.lineWidth = barWidth;
-            canvasCtx.lineCap = 'round'; // Essencial para as pontas arredondadas
-
+            canvasCtx.lineCap = 'round';
             bars.forEach((bar, i) => {
-                // Movimento mais dinâmico
                 bar.height += bar.speed * bar.direction;
                 if (bar.height > canvasHeight * 0.9 || bar.height < 5) {
                     bar.direction *= -1;
-                    bar.speed = Math.random() * 0.8 + 0.2; // Muda a velocidade a cada inversão
+                    bar.speed = Math.random() * 0.8 + 0.2;
                 }
-                
                 const x = gap + i * (barWidth + gap);
                 const y1 = canvasHeight / 2 - bar.height / 2;
                 const y2 = canvasHeight / 2 + bar.height / 2;
-
                 canvasCtx.beginPath();
                 canvasCtx.moveTo(x, y1);
                 canvasCtx.lineTo(x, y2);
@@ -116,24 +97,16 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     }
 
-    /**
-     * Para o visualizador de ondas sonoras.
-     */
     function stopVisualizer() {
         if (visualizerAnimationId) {
             cancelAnimationFrame(visualizerAnimationId);
             visualizerAnimationId = null;
-            // Limpa o canvas
             setTimeout(() => canvasCtx.clearRect(0, 0, canvas.width, canvas.height), 100);
         }
     }
 
-    /**
-     * Verifica se o título da música precisa de deslizar e aplica a classe.
-     */
     function updateMarquee() {
         const container = musicStatus.parentElement;
-        // Usa um timeout para garantir que o DOM foi atualizado com o novo texto
         setTimeout(() => {
             if (musicStatus.scrollWidth > container.offsetWidth) {
                 musicStatus.classList.add('scrolling');
@@ -143,9 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
 
-
     // --- FUNÇÕES DE LÓGICA DO YOUTUBE ---
-    
     function parseYoutubeUrl(url) {
         const videoIdRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
         const playlistIdRegex = /[?&]list=([a-zA-Z0-9_-]+)/;
@@ -162,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = parseYoutubeUrl(url);
         if (!content) { showModal(alertModalOverlay, "O link inserido não parece ser um vídeo ou playlist válida do YouTube."); return; }
         if (!isPlayerReady) { showModal(alertModalOverlay, "O player de música ainda não está pronto. Tente novamente em alguns segundos."); return; }
-
         if (content.type === 'video') {
             ytPlayer.loadVideoById(content.id);
             musicStatus.textContent = "A carregar vídeo do link...";
@@ -183,13 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
             youtubeApiKeyInput.focus();
             return;
         }
-
         youtubeSearchBtn.disabled = true;
         youtubeSearchBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
         lucide.createIcons();
-
         const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&key=${youtubeApiKey}&type=video,playlist&maxResults=15`;
-
         try {
             const response = await fetch(url);
             const data = await response.json();
@@ -214,10 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
         items.forEach(item => {
             const isPlaylist = item.id.kind === 'youtube#playlist';
             const id = isPlaylist ? item.id.playlistId : item.id.videoId;
-            
             const resultEl = document.createElement('div');
             resultEl.className = 'flex items-center p-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer';
-            
             resultEl.innerHTML = `
                 <img src="${item.snippet.thumbnails.default.url}" alt="Thumbnail" class="w-16 h-12 object-cover rounded-md mr-3">
                 <div class="flex-grow min-w-0">
@@ -263,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.data === YT.PlayerState.PLAYING) {
             musicPlayerContainer.classList.add('music-active');
             startVisualizer();
-            // Atualiza o título quando a música realmente começa
             const videoData = ytPlayer.getVideoData();
             musicStatus.textContent = videoData.title || "A tocar...";
             updateMarquee();
@@ -410,30 +374,30 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'longBreak': modeColor = 'indigo'; modeShadowColor = 'rgba(99, 102, 241, 0.7)'; break;
         }
     
-        // Atualiza o anel de progresso
         progressRing.className = `text-${modeColor}-500`;
         progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
     
-        // Define o ícone e o estilo do botão principal
-        const iconName = isRunning ? 'pause' : 'play';
-        const iconSize = isRunning ? 'w-8 h-8' : 'w-8 h-8';
-    
-        startPauseBtn.innerHTML = `<i data-lucide="${iconName}" class="${iconSize}"></i>`;
-        // Adiciona um preenchimento ao ícone de play para centralizá-lo melhor
-        if (!isRunning) {
-            startPauseBtn.querySelector('i').style.paddingLeft = '4px';
+        // Lógica para alternar entre ícone de play (preenchido) e pause
+        if (isRunning) {
+            // Usa Lucide para o ícone de pause
+            startPauseBtn.innerHTML = `<i data-lucide="pause" class="w-8 h-8"></i>`;
+        } else {
+            // Usa um SVG customizado e preenchido para o ícone de play
+            startPauseBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="pl-1">
+                    <path d="M6 3v18l15-9L6 3z"></path>
+                </svg>
+            `;
         }
     
         startPauseBtn.style.boxShadow = `0 0 20px ${modeShadowColor}`;
         startPauseBtn.className = `w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center bg-${modeColor}-600 hover:bg-${modeColor}-700`;
     
-        // Atualiza o círculo de progresso
         const circumference = 2 * Math.PI * 45;
         const offset = circumference - (timeRemaining / totalTime) * circumference;
         progressRing.style.strokeDasharray = circumference;
         progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
     
-        // ESSENCIAL: Renderiza os novos ícones inseridos no HTML
         lucide.createIcons();
     };
     
@@ -560,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- EVENT LISTENERS ---
     startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
-    resetBtn.addEventListener('click', () => resetTimer(mode));
+    resetBtn.addEventListener('click', () => resetTimer(mode)); // Funcionalidade revertida
     settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
     settingsSaveBtn.addEventListener('click', () => {
         settings.focusDuration = parseInt(focusDurationInput.value) || 25;
