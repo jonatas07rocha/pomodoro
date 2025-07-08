@@ -402,21 +402,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const seconds = timeRemaining % 60;
         timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         document.title = `${timerDisplay.textContent} - Foco Total`;
+    
         let modeColor, modeShadowColor;
         switch (mode) {
             case 'focus': modeColor = 'blue'; modeShadowColor = 'rgba(59, 130, 246, 0.7)'; break;
             case 'shortBreak': modeColor = 'green'; modeShadowColor = 'rgba(34, 197, 94, 0.7)'; break;
             case 'longBreak': modeColor = 'indigo'; modeShadowColor = 'rgba(99, 102, 241, 0.7)'; break;
         }
+    
+        // Atualiza o anel de progresso
         progressRing.className = `text-${modeColor}-500`;
         progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
-        startPauseBtn.style.boxShadow = `0 0 15px ${modeShadowColor}`;
-        startPauseBtn.className = `w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg bg-${modeColor}-600 hover:bg-${modeColor}-700`;
-        startPauseBtn.textContent = isRunning ? 'Pausar' : (mode === 'focus' ? 'Iniciar Foco' : 'Iniciar Pausa');
+    
+        // Define o ícone e o estilo do botão principal
+        const iconName = isRunning ? 'pause' : 'play';
+        const iconSize = isRunning ? 'w-8 h-8' : 'w-8 h-8';
+    
+        startPauseBtn.innerHTML = `<i data-lucide="${iconName}" class="${iconSize}"></i>`;
+        // Adiciona um preenchimento ao ícone de play para centralizá-lo melhor
+        if (!isRunning) {
+            startPauseBtn.querySelector('i').style.paddingLeft = '4px';
+        }
+    
+        startPauseBtn.style.boxShadow = `0 0 20px ${modeShadowColor}`;
+        startPauseBtn.className = `w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center bg-${modeColor}-600 hover:bg-${modeColor}-700`;
+    
+        // Atualiza o círculo de progresso
         const circumference = 2 * Math.PI * 45;
         const offset = circumference - (timeRemaining / totalTime) * circumference;
         progressRing.style.strokeDasharray = circumference;
         progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
+    
+        // ESSENCIAL: Renderiza os novos ícones inseridos no HTML
         lucide.createIcons();
     };
     
