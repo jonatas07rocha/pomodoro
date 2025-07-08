@@ -277,21 +277,29 @@
             </div>
         </div>
 
-        <div class="space-y-2 mt-4">
-            <button id="start-pause-btn" class="w-full text-white font-bold py-3 rounded-xl text-base transition-all duration-300 transform hover:scale-105 shadow-lg">
-                Iniciar Foco
+        <!-- NOVO Bloco de Controles do Player -->
+        <div id="player-controls" class="flex items-center justify-center space-x-4 mt-4">
+            <!-- Botão de Resetar/Pular (agora parece um "voltar") -->
+            <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110">
+                <i data-lucide="rotate-cw" class="w-5 h-5"></i>
             </button>
-            <div class="flex space-x-2">
-                <button id="reset-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm">
-                    Resetar
-                </button>
-                 <button id="share-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm flex items-center justify-center gap-2">
-                    <i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar
-                </button>
-                <button id="settings-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl transition-colors text-sm">
-                    Ajustes
-                </button>
-            </div>
+
+            <!-- Botão Principal de Play/Pause -->
+            <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
+                <!-- O ícone será inserido pelo JavaScript -->
+            </button>
+
+            <!-- Botão de Configurações -->
+            <button id="settings-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110">
+                <i data-lucide="settings-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Botão de Compartilhar (movido para baixo, opcional) -->
+        <div class="text-center mt-4">
+             <button id="share-btn" class="bg-transparent hover:bg-gray-700 text-gray-400 font-bold py-2 px-4 rounded-xl transition-colors text-xs flex items-center justify-center gap-2 mx-auto">
+                <i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar
+            </button>
         </div>
     </div>
 
