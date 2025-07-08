@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const expandPlayerBtn = document.getElementById('expand-player-btn');
     const canvas = document.getElementById('sound-wave-canvas');
     const canvasCtx = canvas.getContext('2d');
+    const toggleRandomBtn = document.getElementById('toggle-random-btn'); // Novo elemento para o botão de modo aleatório
 
     const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
     const notificationsStatusMsg = document.getElementById('notifications-status-msg');
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
     let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
     let currentSongIndex = 0;
+    let isRandomMode = false; // Novo estado para o modo aleatório
 
     // Variáveis da Web Audio API
     let audioContext; 
@@ -51,23 +53,51 @@ document.addEventListener('DOMContentLoaded', () => {
     let visualizerAnimationId;
     let isAudioInitialized = false; // Flag para controlar a inicialização
 
-    // A lista de músicas agora contém apenas a música que está presente no seu repositório
+    // Lista de músicas atualizada com as 6 fornecidas
     const songList = [
         {
             title: 'Breathe Chill Lofi Beats',
             artist: 'Pixabay',
             url: 'https://jonatas07rocha.github.io/pomodoro/audio/breathe-chill-lofi-beats-362644.mp3'
+        },
+        {
+            title: 'Bright Sun Chill Lofi',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/bright-sun-chill-lofi-324134.mp3'
+        },
+        {
+            title: 'Card Games Lofi Chill',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/card-games-lofi-chill-315489.mp3'
+        },
+        {
+            title: 'Lofi Chill Background Music',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/lofi-chill-background-music-313055.mp3'
+        },
+        {
+            title: 'Moving On Lofi',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/moving-on-lofi-309231.mp3'
+        },
+        {
+            title: 'Time For Bed Chill Lofi',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/time-for-bed-chill-lofi-315485.mp3'
         }
     ];
 
     // --- Funções do Player de Áudio ---
     function populateMusicSelector() {
+        musicSelect.innerHTML = ''; // Limpa as opções existentes
         songList.forEach((song, index) => {
             const option = document.createElement('option');
             option.value = index;
             option.textContent = `${song.title} - ${song.artist}`;
             musicSelect.appendChild(option);
         });
+        // Seleciona a música atual se houver
+        musicSelect.value = currentSongIndex;
     }
 
     function loadSong(index) {
@@ -82,6 +112,37 @@ document.addEventListener('DOMContentLoaded', () => {
             updateMusicStatusMarquee();
         } else {
             console.warn("No song found for index:", index); // Log if song is not found
+            musicStatus.textContent = "Nenhuma música carregada.";
+            musicStatus.title = "Nenhuma música carregada.";
+            audioPlayer.src = ''; // Limpa a fonte do áudio
+            stopVisualizer();
+        }
+    }
+
+    function playRandomSong() {
+        if (songList.length === 0) {
+            console.warn("No songs in the list to play randomly.");
+            return;
+        }
+        let randomIndex;
+        do {
+            randomIndex = Math.floor(Math.random() * songList.length);
+        } while (randomIndex === currentSongIndex && songList.length > 1); // Evita repetir a mesma música se houver mais de uma
+        
+        loadSong(randomIndex);
+        if (isRunning) { // Tenta tocar apenas se o timer estiver rodando
+            audioPlayer.play().then(() => {
+                console.log("Random audio started successfully.");
+                setMusicPlayerView('minimized');
+                startVisualizer();
+            }).catch(error => {
+                console.error("Error playing random audio:", error);
+                if (error.name === "NotAllowedError" || error.name === "NotSupportedError") {
+                    showModal(alertModalOverlay, 'O navegador bloqueou a reprodução automática. Por favor, clique em "Pausar" e "Iniciar Foco" novamente para ativar o som.');
+                } else {
+                    showModal(alertModalOverlay, `Erro ao reproduzir áudio aleatório: ${error.message}. Verifique o console para mais detalhes.`);
+                }
+            });
         }
     }
     
@@ -253,21 +314,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log("Audio player source before play():", audioPlayer.src); // Log the source right before playing
 
-        if (audioPlayer.src && audioPlayer.paused) {
-            // Adicionado try-catch para o play() para depuração
-            audioPlayer.play().then(() => {
-                console.log("Audio started successfully.");
-                setMusicPlayerView('minimized');
-                startVisualizer();
-            }).catch(error => {
-                console.error("Error playing audio:", error);
-                // Exibe o modal apenas se o erro for de autoplay
-                if (error.name === "NotAllowedError" || error.name === "NotSupportedError") {
-                    showModal(alertModalOverlay, 'O navegador bloqueou a reprodução automática. Por favor, clique em "Pausar" e "Iniciar Foco" novamente para ativar o som.');
-                } else {
-                    showModal(alertModalOverlay, `Erro ao reproduzir áudio: ${error.message}. Verifique o console para mais detalhes.`);
-                }
-            });
+        if (audioPlayer.paused) { // Verifica se o áudio está pausado antes de tentar tocar
+            if (isRandomMode) {
+                playRandomSong();
+            } else if (audioPlayer.src) { // Só tenta tocar se houver uma fonte definida
+                audioPlayer.play().then(() => {
+                    console.log("Audio started successfully.");
+                    setMusicPlayerView('minimized');
+                    startVisualizer();
+                }).catch(error => {
+                    console.error("Error playing audio:", error);
+                    if (error.name === "NotAllowedError" || error.name === "NotSupportedError") {
+                        showModal(alertModalOverlay, 'O navegador bloqueou a reprodução automática. Por favor, clique em "Pausar" e "Iniciar Foco" novamente para ativar o som.');
+                    } else {
+                        showModal(alertModalOverlay, `Erro ao reproduzir áudio: ${error.message}. Verifique o console para mais detalhes.`);
+                    }
+                });
+            } else {
+                console.warn("No audio source set to play.");
+            }
         }
         updateUI();
     };
@@ -477,6 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
         localStorage.setItem('pomodoroMusicVolume', volumeSlider.value);
         localStorage.setItem('pomodoroLastSongIndex', currentSongIndex);
+        localStorage.setItem('pomodoroIsRandomMode', isRandomMode); // Salva o estado do modo aleatório
     };
 
     const loadState = () => {
@@ -507,6 +573,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedVolume = localStorage.getItem('pomodoroMusicVolume') || '50';
         volumeSlider.value = savedVolume;
         audioPlayer.volume = savedVolume / 100;
+
+        // Carrega o estado do modo aleatório
+        isRandomMode = localStorage.getItem('pomodoroIsRandomMode') === 'true'; 
+        updateRandomModeButtonUI(); // Atualiza o texto do botão
 
         const lastSongIndex = localStorage.getItem('pomodoroLastSongIndex') || 0;
         musicSelect.value = lastSongIndex;
@@ -541,6 +611,14 @@ document.addEventListener('DOMContentLoaded', () => {
             musicPlayerContainer.classList.remove('music-player-minimized');
             musicPlayerContainer.classList.add('music-player-maximized');
         }
+    }
+
+    function updateRandomModeButtonUI() {
+        toggleRandomBtn.textContent = `Modo Aleatório: ${isRandomMode ? 'Ativado' : 'Desativado'}`;
+        toggleRandomBtn.classList.toggle('bg-blue-600', isRandomMode);
+        toggleRandomBtn.classList.toggle('hover:bg-blue-700', isRandomMode);
+        toggleRandomBtn.classList.toggle('bg-gray-600', !isRandomMode);
+        toggleRandomBtn.classList.toggle('hover:bg-gray-700', !isRandomMode);
     }
 
     // --- Event Listeners ---
@@ -604,6 +682,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isAudioInitialized) {
             initAudioSystem();
         }
+        // Quando o usuário seleciona uma música, desativa o modo aleatório
+        isRandomMode = false; 
+        updateRandomModeButtonUI();
         loadSong(e.target.value);
         if (isRunning) {
             audioPlayer.play();
@@ -616,6 +697,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     expandPlayerBtn.addEventListener('click', () => {
         setMusicPlayerView('maximized');
+    });
+
+    toggleRandomBtn.addEventListener('click', () => {
+        isRandomMode = !isRandomMode;
+        updateRandomModeButtonUI();
+        saveState(); // Salva o novo estado do modo aleatório
+        if (isRandomMode && isRunning && audioPlayer.paused) {
+            playRandomSong(); // Inicia a reprodução aleatória se o timer estiver rodando e o áudio pausado
+        } else if (!isRandomMode && isRunning && audioPlayer.paused) {
+            // Se desativar o modo aleatório, volta para a música selecionada no dropdown
+            loadSong(musicSelect.value);
+            audioPlayer.play();
+        }
+    });
+    
+    // Evento para tocar a próxima música aleatória quando a atual terminar
+    audioPlayer.addEventListener('ended', () => {
+        if (isRandomMode) {
+            playRandomSong();
+        }
     });
     
     enableNotificationsBtn.addEventListener('click', () => {
