@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let visualizerAnimationId;
     let isAudioInitialized = false; // Flag para controlar a inicialização
 
-    // Lista de músicas atualizada com as 6 fornecidas
+    // Lista de músicas atualizada com todas as faixas do repositório
     const songList = [
         {
             title: 'Breathe Chill Lofi Beats',
@@ -71,6 +71,26 @@ document.addEventListener('DOMContentLoaded', () => {
             url: 'https://jonatas07rocha.github.io/pomodoro/audio/card-games-lofi-chill-315489.mp3'
         },
         {
+            title: 'Cvilini Violin 1',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/cvilini-violin-1-302858.mp3'
+        },
+        {
+            title: 'Cvilini Violin',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/cvilini-violin-302859.mp3'
+        },
+        {
+            title: 'Emotional Inspiring Violin',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/emotional-inspiring-violin-342019.mp3'
+        },
+        {
+            title: 'Epic Violin Cinematic Instrumental',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/epic-violin-cinematic-instrumental-music-283511.mp3'
+        },
+        {
             title: 'Lofi Chill Background Music',
             artist: 'Pixabay',
             url: 'https://jonatas07rocha.github.io/pomodoro/audio/lofi-chill-background-music-313055.mp3'
@@ -84,6 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
             title: 'Time For Bed Chill Lofi',
             artist: 'Pixabay',
             url: 'https://jonatas07rocha.github.io/pomodoro/audio/time-for-bed-chill-lofi-315485.mp3'
+        },
+        {
+            title: 'Violin Is In Painsad',
+            artist: 'Pixabay',
+            url: 'https://jonatas07rocha.github.io/pomodoro/audio/violin-is-in-painsad-violin-268426.mp3'
         }
     ];
 
