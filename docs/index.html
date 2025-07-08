@@ -122,7 +122,49 @@
             overflow: hidden;
             transition: all 0.5s ease;
         }
+
+        /* --- NOVOS ESTILOS PARA ANIMAÇÕES --- */
+        #music-controls-wrapper {
+            transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            max-height: 300px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .music-active #music-controls-wrapper {
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-20px);
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        #expand-hint {
+            display: none;
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.3);
+            transition: opacity 0.3s;
+        }
+
+        .music-active #expand-hint {
+            display: block;
+        }
         
+        .music-active:hover #music-controls-wrapper {
+             max-height: 300px;
+             opacity: 1;
+             transform: translateY(0);
+             pointer-events: auto;
+        }
+
+        .music-active:hover #expand-hint {
+            opacity: 0;
+        }
+        
+        /* Efeito Marquee (Título Deslizante) */
         @keyframes marquee {
             0%   { transform: translateX(0); }
             10%  { transform: translateX(0); }
@@ -136,54 +178,28 @@
         }
         .marquee-text.scrolling {
             display: inline-block;
-            padding-right: 20px; /* Espaço para não emendar o texto */
+            padding-right: 20px;
             animation: marquee 10s linear infinite;
         }
 
-        #music-selector-view, #music-visualizer-view {
-            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s, height 0.4s ease;
-        }
-        
-        .music-player-minimized #music-selector-view {
-            opacity: 0;
-            transform: translateY(-20px);
-            visibility: hidden;
-            height: 0;
-            pointer-events: none;
-        }
-        
-        .music-player-maximized #music-visualizer-view {
-            opacity: 0;
-            transform: translateY(20px);
-            visibility: hidden;
-            height: 0;
-            pointer-events: none;
-        }
-
+        /* Visualizador de Ondas Sonoras */
         #sound-wave-canvas {
             width: 100%;
             height: 40px;
-            display: block;
+            display: none; /* Começa oculto */
             margin-top: 0.5rem;
         }
-
-        #expand-player-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            padding: 4px;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .music-player-minimized:hover #expand-player-btn {
-            opacity: 1;
+        .music-active #sound-wave-canvas {
+            display: block; /* Visível quando a música está ativa */
         }
     </style>
 </head>
 <body>
+    <!-- Container para o player do YouTube (ficará oculto) -->
+    <div id="youtube-player-container" class="absolute top-[-9999px] left-[-9999px]">
+        <div id="youtube-player"></div>
+    </div>
+
     <div id="device-shell" class="device-shell">
         <header class="text-center mb-4">
             <h1 class="text-2xl font-bold text-white">Foco Total</h1>
@@ -216,31 +232,49 @@
             </div>
         </div>
         
-        <div id="music-player-container" class="music-player-maximized">
-            <div id="music-selector-view">
-                <h3 class="text-base font-semibold text-white mb-3 text-center">Música Ambiente</h3>
-                <select id="music-select" class="w-full bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none">
-                </select>
-                <button id="toggle-random-btn" class="mt-2 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors text-sm">
-                    Modo Aleatório: Desativado
-                </button>
-            </div>
-
-            <div id="music-visualizer-view">
-                <div class="marquee-container">
-                    <p id="music-status" class="marquee-text text-sm text-center text-gray-300 truncate">Nenhuma música carregada.</p>
-                </div>
-                <canvas id="sound-wave-canvas"></canvas>
+        <div id="music-player-container">
+            <h3 class="text-base font-semibold text-white mb-2 text-center">Música Ambiente</h3>
+            
+            <!-- Container para o título deslizante -->
+            <div class="marquee-container">
+                <p id="music-status" class="marquee-text text-sm text-center text-gray-300">Nenhuma música selecionada</p>
             </div>
             
-            <div class="mt-3">
+            <!-- Canvas para o visualizador -->
+            <canvas id="sound-wave-canvas"></canvas>
+            
+            <div id="music-controls-wrapper">
+                <!-- Seção de Inserção de Link -->
+                <div class="mb-3 mt-3">
+                    <label for="youtube-link-input" class="text-xs text-gray-400 mb-1 block">Colar link do YouTube (Vídeo ou Playlist)</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="youtube-link-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="https://youtube.com/watch?v=...">
+                        <button id="play-link-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 rounded-lg transition-colors flex-shrink-0 text-sm font-semibold">Tocar</button>
+                    </div>
+                </div>
+
+                <hr class="border-gray-700 my-3">
+
+                <!-- Seção de Busca -->
+                <div>
+                    <label for="youtube-search-input" class="text-xs text-gray-400 mb-1 block">Ou pesquise por um vídeo/playlist</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="youtube-search-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Ex: lofi hip hop radio">
+                        <button id="youtube-search-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors flex-shrink-0">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="expand-hint">
+                <i data-lucide="chevron-down" class="w-5 h-5"></i>
+            </div>
+
+            <div class="mt-4">
                 <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
                 <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
             </div>
-
-            <button id="expand-player-btn" title="Mostrar seletor de música">
-                <i data-lucide="arrow-down-to-line" class="w-5 h-5 text-gray-300"></i>
-            </button>
         </div>
 
         <div class="space-y-2 mt-4">
@@ -261,6 +295,7 @@
         </div>
     </div>
 
+    <!-- Modal de Alerta Padrão -->
     <div id="alert-modal-overlay" class="modal-overlay">
         <div class="modal-content text-center">
             <p id="alert-modal-message" class="mb-4"></p>
@@ -268,6 +303,7 @@
         </div>
     </div>
 
+    <!-- Modal de Configurações -->
     <div id="settings-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações & Ajuda</h2>
@@ -291,12 +327,25 @@
             </div>
 
             <div class="mb-4">
-                <h3 class="text-base font-semibold text-blue-400 mb-3">Notificações</h3>
-                <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-                    <p class="text-sm text-gray-300">Avisar ao fim de cada ciclo.</p>
-                    <button id="enable-notifications-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs">Ativar</button>
+                <h3 class="text-base font-semibold text-blue-400 mb-3">YouTube e Notificações</h3>
+                <div class="bg-gray-800 p-3 rounded-lg space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label for="youtube-api-key" class="block text-xs font-medium text-gray-300">Chave da API do YouTube (para busca)</label>
+                            <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:underline flex items-center gap-1">
+                                Obter chave
+                                <i data-lucide="help-circle" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                        <p id="api-key-prompt-msg" class="text-xs text-yellow-400 mt-1 hidden">É necessária uma chave para a busca funcionar.</p>
+                        <input type="password" id="youtube-api-key" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Cole sua chave aqui">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm text-gray-300">Avisar ao fim de cada ciclo.</p>
+                        <button id="enable-notifications-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs">Ativar</button>
+                    </div>
+                    <p id="notifications-status-msg" class="text-xs text-gray-500 pl-1"></p>
                 </div>
-                <p id="notifications-status-msg" class="text-xs text-gray-500 mt-2 pl-1"></p>
             </div>
             
             <div class="mb-4">
@@ -306,26 +355,25 @@
                     <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
                </div>
             </div>
-
-            <div class="flex-grow">
-                <h3 class="text-base font-semibold text-blue-400 mb-3">Guia Rápido</h3>
-                <ul class="list-disc list-inside text-gray-300 space-y-1 text-xs">
-                    <li>Adicione e selecione uma tarefa.</li>
-                    <li>Inicie o temporizador de foco.</li>
-                    <li>Trabalhe na tarefa sem interrupções.</li>
-                    <li>Faça uma pausa curta ao final do ciclo.</li>
-                    <li>Após 4 ciclos, faça uma pausa longa.</li>
-                </ul>
-            </div>
             <button id="settings-save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mt-6 transition-colors text-sm">
                 Salvar e Fechar
             </button>
         </div>
     </div>
+    
+    <!-- Modal de Resultados da Busca -->
+    <div id="search-results-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold text-white mb-4">Resultados da Busca</h2>
+            <div id="search-results-list" class="space-y-2 overflow-y-auto max-h-[60vh] pr-2">
+                <!-- Resultados serão injetados aqui -->
+            </div>
+            <button id="search-results-close-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl mt-4 transition-colors">Fechar</button>
+        </div>
+    </div>
 
-    <!-- O atributo 'loop' foi removido daqui para permitir a troca de músicas -->
-    <audio id="audio-player" crossorigin="anonymous"></audio>
-
+    <!-- API do YouTube IFrame -->
+    <script src="https://www.youtube.com/iframe_api"></script>
     <!-- Referência ao arquivo JavaScript externo -->
     <script src="script.js"></script>
 </body>
