@@ -42,18 +42,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const musicPlayerContainer = document.getElementById('music-player-container');
     const canvas = document.getElementById('sound-wave-canvas');
     const canvasCtx = canvas.getContext('2d');
+    // NOVO: Elementos para o player recolhível
+    const musicHeader = document.getElementById('music-header');
+    const toggleMusicBtn = document.getElementById('toggle-music-btn');
 
     // --- ESTADO DA APLICAÇÃO ---
     let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
     let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
     let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
     let youtubeApiKey = '';
+    let isMusicPlayerCollapsed = true; // Inicia recolhido
 
     // --- ESTADO DO PLAYER DE MÚSICA E ANIMAÇÕES ---
     let ytPlayer, isPlayerReady = false;
     let visualizerAnimationId;
-
-    // --- FUNÇÕES DE ANIMAÇÃO ---
+    
+    // --- FUNÇÕES DE ANIMAÇÃO E UI DO PLAYER ---
     function startVisualizer() {
         if (visualizerAnimationId) cancelAnimationFrame(visualizerAnimationId);
         let barCount = 20;
@@ -115,6 +119,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 100);
     }
+    
+    // NOVO: Funções para controlar a visibilidade do player
+    const toggleMusicPlayer = () => {
+        isMusicPlayerCollapsed = !isMusicPlayerCollapsed;
+        musicPlayerContainer.classList.toggle('music-collapsed', isMusicPlayerCollapsed);
+        saveState();
+    };
+
+    const expandMusicPlayer = () => {
+        if (isMusicPlayerCollapsed) {
+            isMusicPlayerCollapsed = false;
+            musicPlayerContainer.classList.remove('music-collapsed');
+            saveState();
+        }
+    };
 
     // --- FUNÇÕES DE LÓGICA DO YOUTUBE ---
     function parseYoutubeUrl(url) {
@@ -133,6 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = parseYoutubeUrl(url);
         if (!content) { showModal(alertModalOverlay, "O link inserido não parece ser um vídeo ou playlist válida do YouTube."); return; }
         if (!isPlayerReady) { showModal(alertModalOverlay, "O player de música ainda não está pronto. Tente novamente em alguns segundos."); return; }
+        
+        expandMusicPlayer(); // Garante que o player está visível
+        
         if (content.type === 'video') {
             ytPlayer.loadVideoById(content.id);
             musicStatus.textContent = "A carregar vídeo do link...";
@@ -194,6 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             resultEl.addEventListener('click', () => {
+                expandMusicPlayer(); // Garante que o player está visível
                 if (isPlaylist) {
                     ytPlayer.loadPlaylist({ list: id, listType: 'playlist' });
                     musicStatus.textContent = `A carregar playlist: ${item.snippet.title}`;
@@ -309,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         isRunning = true;
         timer = setInterval(updateTimer, 1000);
-        if (isPlayerReady && ytPlayer.getPlayerState() !== 1) ytPlayer.playVideo();
+        if (isPlayerReady && ytPlayer.getPlayerState() !== 1 && !isMusicPlayerCollapsed) ytPlayer.playVideo();
         updateUI();
     };
 
@@ -377,16 +400,13 @@ document.addEventListener('DOMContentLoaded', () => {
         progressRing.className = `text-${modeColor}-500`;
         progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
     
-        // Lógica para alternar entre ícones de play e pause (ambos preenchidos)
         if (isRunning) {
-            // Usa um SVG customizado e preenchido para o ícone de pause
             startPauseBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M6 3h4v18H6zM14 3h4v18h-4z"></path>
                 </svg>
             `;
         } else {
-            // Usa um SVG customizado e preenchido para o ícone de play
             startPauseBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="pl-1">
                     <path d="M6 3v18l15-9L6 3z"></path>
@@ -402,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
         progressRing.style.strokeDasharray = circumference;
         progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
     
-        // A chamada abaixo é para os outros ícones da página
         lucide.createIcons();
     };
     
@@ -502,6 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
         localStorage.setItem('pomodoroMusicVolume', volumeSlider.value);
         localStorage.setItem('pomodoroYoutubeApiKey', youtubeApiKey);
+        localStorage.setItem('pomodoroMusicCollapsed', JSON.stringify(isMusicPlayerCollapsed)); // Salva estado
     };
 
     const loadState = () => {
@@ -525,6 +545,11 @@ document.addEventListener('DOMContentLoaded', () => {
         volumeSlider.value = savedVolume;
         youtubeApiKey = localStorage.getItem('pomodoroYoutubeApiKey') || '';
         youtubeApiKeyInput.value = youtubeApiKey;
+        
+        // Carrega e aplica o estado do player
+        const savedCollapsedState = localStorage.getItem('pomodoroMusicCollapsed');
+        isMusicPlayerCollapsed = savedCollapsedState !== null ? JSON.parse(savedCollapsedState) : true;
+        musicPlayerContainer.classList.toggle('music-collapsed', isMusicPlayerCollapsed);
     };
     
     // --- EVENT LISTENERS ---
@@ -539,6 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
         youtubeApiKey = youtubeApiKeyInput.value.trim();
         saveState();
         hideModal(settingsModalOverlay);
+        resetTimer(mode); // Atualiza o timer com as novas durações
     });
     addTaskBtn.addEventListener('click', addTask);
     newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
@@ -562,7 +588,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } else { shareBtn.style.display = 'none'; }
     
-    volumeSlider.addEventListener('input', (e) => { if (isPlayerReady) ytPlayer.setVolume(e.target.value); });
+    volumeSlider.addEventListener('input', (e) => { 
+        if (isPlayerReady) ytPlayer.setVolume(e.target.value); 
+        saveState();
+    });
     
     enableNotificationsBtn.addEventListener('click', () => { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().then(updateNotificationStatusUI); });
     
@@ -571,6 +600,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     playLinkBtn.addEventListener('click', playFromLink);
     youtubeLinkInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') playFromLink(); });
+
+    // NOVO: Listener para o cabeçalho do player de música
+    musicHeader.addEventListener('click', (e) => {
+        if (e.target.closest('button, input, a') && e.target !== toggleMusicBtn && !toggleMusicBtn.contains(e.target)) {
+            return;
+        }
+        toggleMusicPlayer();
+    });
 
     // --- INICIALIZAÇÃO DA APLICAÇÃO ---
     function main() {
