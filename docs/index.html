@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Intro.js (Para o Tour) -->
+    <link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css">
     <!-- Favicon SVG Personalizado (Tomate) -->
     <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22><circle cx=%2212%22 cy=%2213%22 r=%229%22 fill=%22%23FF6347%22/><path d=%22M16 8c-2 2-4 2-6 0%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/><path d=%22M12 8V2l2 2%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/></svg>">
     <style>
@@ -150,21 +152,49 @@
             display: block;
         }
 
-        /* NOVO: Estilos para o player de música recolhível */
         #music-content {
             transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.5s ease-in-out;
-            max-height: 500px; /* Altura suficiente para o conteúdo expandido */
+            max-height: 500px;
             opacity: 1;
         }
         .music-collapsed #music-content {
             max-height: 0;
-            margin-top: 0 !important; /* Adicionado para remover margem quando recolhido */
+            margin-top: 0 !important;
             opacity: 0;
-            pointer-events: none; /* Impede interação quando recolhido */
+            pointer-events: none;
         }
         .music-collapsed #toggle-music-btn i {
             transform: rotate(-90deg);
         }
+
+        /* Custom Intro.js Theme */
+        .introjs-tooltip {
+            background-color: #1F2937;
+            color: #E5E7EB;
+            border: 1px solid #3B82F6;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+            font-family: 'Inter', sans-serif;
+        }
+        .introjs-arrow.top, .introjs-arrow.top-middle, .introjs-arrow.top-right { border-bottom-color: #1F2937; }
+        .introjs-arrow.bottom, .introjs-arrow.bottom-middle, .introjs-arrow.bottom-right { border-top-color: #1F2937; }
+        .introjs-arrow.left, .introjs-arrow.left-bottom { border-right-color: #1F2937; }
+        .introjs-arrow.right, .introjs-arrow.right-bottom { border-left-color: #1F2937; }
+        .introjs-tooltiptext { font-size: 0.9rem; line-height: 1.5; }
+        .introjs-button {
+            background-color: #3B82F6;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            text-shadow: none;
+            transition: background-color 0.2s;
+        }
+        .introjs-button:hover { background-color: #2563EB; }
+        .introjs-skipbutton { color: #9CA3AF; }
+        .introjs-skipbutton:hover { color: white; }
+        .introjs-progress { background-color: #374151; }
+        .introjs-progressbar { background-color: #3B82F6; }
     </style>
 </head>
 <body>
@@ -177,7 +207,7 @@
             <h1 class="text-2xl font-bold text-white">Foco Total</h1>
         </header>
 
-        <div class="timer-panel">
+        <div class="timer-panel" data-step="1" data-intro="Este é o seu cronómetro. Ele mostra o tempo restante para as suas sessões de foco e pausas.">
             <div class="relative w-56 h-56 mx-auto">
                 <svg class="w-full h-full" viewBox="0 0 100 100">
                     <circle class="text-gray-800" stroke-width="7" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
@@ -189,13 +219,13 @@
             </div>
         </div>
 
-        <div class="text-center mb-2">
+        <div class="text-center mb-2" data-step="2" data-intro="A tarefa em que está a trabalhar no momento aparecerá aqui.">
             <p class="text-gray-400 text-sm">Foco em:</p>
             <p id="current-task-display" class="text-white font-semibold text-base truncate">Nenhuma tarefa selecionada</p>
             <div id="pomodoro-cycles" class="flex justify-center items-center space-x-2 mt-1 h-6"></div>
         </div>
 
-        <div class="flex-grow flex flex-col min-h-[150px] mb-4">
+        <div class="flex-grow flex flex-col min-h-[150px] mb-4" data-step="3" data-intro="Aqui pode adicionar e gerir as suas tarefas. Clique numa tarefa para a selecionar.">
             <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas</h2>
             <div id="task-list" class="space-y-2 flex-grow overflow-y-auto pr-2"></div>
             <div class="flex mt-3 space-x-2">
@@ -204,17 +234,13 @@
             </div>
         </div>
         
-        <!-- Player de Música Atualizado -->
-        <div id="music-player-container">
-            <!-- CABEÇALHO COM BOTÃO DE TOGGLE -->
+        <div id="music-player-container" data-step="5" data-intro="Quer uma música de fundo? Expanda este painel para procurar vídeos ou colar um link do YouTube.">
             <div class="flex justify-between items-center cursor-pointer" id="music-header">
                 <h3 class="text-base font-semibold text-white">Música Ambiente</h3>
                 <button id="toggle-music-btn" class="text-gray-400 hover:text-white p-1">
                     <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
                 </button>
             </div>
-
-            <!-- CONTEÚDO RECOLHÍVEL -->
             <div id="music-content">
                 <div class="marquee-container mt-2">
                     <p id="music-status" class="marquee-text text-sm text-center text-gray-300">Nenhuma música selecionada</p>
@@ -246,23 +272,24 @@
             </div>
         </div>
 
-
-        <!-- Bloco de Controles do Player -->
-        <div id="player-controls" class="flex items-center justify-center space-x-4 mt-4">
+        <div id="player-controls" class="flex items-center justify-center space-x-4 mt-4" data-step="4" data-intro="Use estes botões para iniciar, pausar ou reiniciar o cronómetro.">
             <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110">
                 <i data-lucide="rotate-cw" class="w-5 h-5"></i>
             </button>
             <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
-                <!-- O ícone será inserido pelo JavaScript -->
             </button>
-            <button id="settings-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110">
+            <button id="settings-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110" data-step="6" data-intro="Clique aqui para ajustar a duração dos ciclos, configurar notificações e muito mais.">
                 <i data-lucide="settings-2" class="w-5 h-5"></i>
             </button>
         </div>
 
-        <div class="text-center mt-4">
+        <div class="flex items-center justify-center space-x-2 mt-4">
              <button id="share-btn" class="bg-transparent hover:bg-gray-700 text-gray-400 font-bold py-2 px-4 rounded-xl transition-colors text-xs flex items-center justify-center gap-2 mx-auto">
                 <i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar
+            </button>
+            <!-- Botão do Tour -->
+            <button id="start-tour-btn" class="bg-transparent hover:bg-gray-700 text-gray-400 p-2 rounded-full transition-colors">
+                <i data-lucide="help-circle" class="w-5 h-5"></i>
             </button>
         </div>
     </div>
@@ -336,6 +363,7 @@
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
