@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const musicPlayerContainer = document.getElementById('music-player-container');
     const canvas = document.getElementById('sound-wave-canvas');
     const canvasCtx = canvas.getContext('2d');
-    // NOVO: Elementos para o player recolhível
     const musicHeader = document.getElementById('music-header');
     const toggleMusicBtn = document.getElementById('toggle-music-btn');
 
@@ -51,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let tasks = [], selectedTaskId = null, pomodorosCompleted = 0;
     let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
     let youtubeApiKey = '';
-    let isMusicPlayerCollapsed = true; // Inicia recolhido
+    let isMusicPlayerCollapsed = true;
 
     // --- ESTADO DO PLAYER DE MÚSICA E ANIMAÇÕES ---
     let ytPlayer, isPlayerReady = false;
@@ -120,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
     
-    // NOVO: Funções para controlar a visibilidade do player
     const toggleMusicPlayer = () => {
         isMusicPlayerCollapsed = !isMusicPlayerCollapsed;
         musicPlayerContainer.classList.toggle('music-collapsed', isMusicPlayerCollapsed);
@@ -153,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!content) { showModal(alertModalOverlay, "O link inserido não parece ser um vídeo ou playlist válida do YouTube."); return; }
         if (!isPlayerReady) { showModal(alertModalOverlay, "O player de música ainda não está pronto. Tente novamente em alguns segundos."); return; }
         
-        expandMusicPlayer(); // Garante que o player está visível
+        expandMusicPlayer();
         
         if (content.type === 'video') {
             ytPlayer.loadVideoById(content.id);
@@ -216,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             resultEl.addEventListener('click', () => {
-                expandMusicPlayer(); // Garante que o player está visível
+                expandMusicPlayer();
                 if (isPlaylist) {
                     ytPlayer.loadPlaylist({ list: id, listType: 'playlist' });
                     musicStatus.textContent = `A carregar playlist: ${item.snippet.title}`;
@@ -331,9 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
             Notification.requestPermission().then(updateNotificationStatusUI);
         }
         isRunning = true;
+        updateUI();
         timer = setInterval(updateTimer, 1000);
         if (isPlayerReady && ytPlayer.getPlayerState() !== 1 && !isMusicPlayerCollapsed) ytPlayer.playVideo();
-        updateUI();
     };
 
     const pauseTimer = () => {
@@ -344,10 +342,25 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     };
     
+    // CORRIGIDO: Esta função agora só atualiza o tempo e o anel de progresso.
+    const updateTimerDisplay = () => {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        document.title = `${timerDisplay.textContent} - Foco Total`;
+    
+        const circumference = 2 * Math.PI * 45;
+        const offset = circumference - (timeRemaining / totalTime) * circumference;
+        progressRing.style.strokeDasharray = circumference;
+        progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
+    };
+
+    // CORRIGIDO: Esta função é chamada a cada segundo, mas agora é muito mais leve.
     const updateTimer = () => {
-        if (timeRemaining > 0) timeRemaining--;
-        updateUI();
-        if (timeRemaining <= 0) {
+        if (timeRemaining > 0) {
+            timeRemaining--;
+            updateTimerDisplay();
+        } else {
             clearInterval(timer);
             switchMode();
         }
@@ -384,11 +397,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     };
 
+    // CORRIGIDO: Esta função agora só atualiza a UI em mudanças de estado, não a cada segundo.
     const updateUI = () => {
-        const minutes = Math.floor(timeRemaining / 60);
-        const seconds = timeRemaining % 60;
-        timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        document.title = `${timerDisplay.textContent} - Foco Total`;
+        updateTimerDisplay(); // Garante que o tempo está correto no início e em resets.
     
         let modeColor, modeShadowColor;
         switch (mode) {
@@ -416,11 +427,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
         startPauseBtn.style.boxShadow = `0 0 20px ${modeShadowColor}`;
         startPauseBtn.className = `w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center bg-${modeColor}-600 hover:bg-${modeColor}-700`;
-    
-        const circumference = 2 * Math.PI * 45;
-        const offset = circumference - (timeRemaining / totalTime) * circumference;
-        progressRing.style.strokeDasharray = circumference;
-        progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
     
         lucide.createIcons();
     };
@@ -521,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('pomodoroCompletedCount', JSON.stringify(pomodorosCompleted));
         localStorage.setItem('pomodoroMusicVolume', volumeSlider.value);
         localStorage.setItem('pomodoroYoutubeApiKey', youtubeApiKey);
-        localStorage.setItem('pomodoroMusicCollapsed', JSON.stringify(isMusicPlayerCollapsed)); // Salva estado
+        localStorage.setItem('pomodoroMusicCollapsed', JSON.stringify(isMusicPlayerCollapsed));
     };
 
     const loadState = () => {
@@ -546,7 +552,6 @@ document.addEventListener('DOMContentLoaded', () => {
         youtubeApiKey = localStorage.getItem('pomodoroYoutubeApiKey') || '';
         youtubeApiKeyInput.value = youtubeApiKey;
         
-        // Carrega e aplica o estado do player
         const savedCollapsedState = localStorage.getItem('pomodoroMusicCollapsed');
         isMusicPlayerCollapsed = savedCollapsedState !== null ? JSON.parse(savedCollapsedState) : true;
         musicPlayerContainer.classList.toggle('music-collapsed', isMusicPlayerCollapsed);
@@ -564,7 +569,9 @@ document.addEventListener('DOMContentLoaded', () => {
         youtubeApiKey = youtubeApiKeyInput.value.trim();
         saveState();
         hideModal(settingsModalOverlay);
-        resetTimer(mode); // Atualiza o timer com as novas durações
+        if (!isRunning) {
+            resetTimer(mode);
+        }
     });
     addTaskBtn.addEventListener('click', addTask);
     newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
@@ -601,7 +608,6 @@ document.addEventListener('DOMContentLoaded', () => {
     playLinkBtn.addEventListener('click', playFromLink);
     youtubeLinkInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') playFromLink(); });
 
-    // NOVO: Listener para o cabeçalho do player de música
     musicHeader.addEventListener('click', (e) => {
         if (e.target.closest('button, input, a') && e.target !== toggleMusicBtn && !toggleMusicBtn.contains(e.target)) {
             return;
