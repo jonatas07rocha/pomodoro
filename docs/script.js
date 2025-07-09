@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNÇÕES DO TOUR ---
     const startTour = () => {
-        // Assegura que o painel de música está expandido para o passo do tour
         const tour = introJs();
         tour.onbeforechange((targetElement) => {
             if (targetElement.id === 'music-player-container' && isMusicPlayerCollapsed) {
@@ -72,9 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
         tour.onexit(() => {
             localStorage.setItem('pomodoroTourCompleted', 'true');
         });
+        // CORRIGIDO: Utiliza os caracteres Unicode diretamente em vez de entidades HTML.
         tour.setOptions({
-            nextLabel: 'Próximo &rarr;',
-            prevLabel: '&larr; Anterior',
+            nextLabel: 'Próximo →',
+            prevLabel: '← Anterior',
             doneLabel: 'Concluir',
             tooltipClass: 'custom-tooltip'
         }).start();
