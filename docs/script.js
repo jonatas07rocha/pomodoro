@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvasCtx = canvas.getContext('2d');
     const musicHeader = document.getElementById('music-header');
     const toggleMusicBtn = document.getElementById('toggle-music-btn');
+    const startTourBtn = document.getElementById('start-tour-btn'); // Botão do Tour
 
     // --- ESTADO DA APLICAÇÃO ---
     let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
@@ -55,6 +56,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ESTADO DO PLAYER DE MÚSICA E ANIMAÇÕES ---
     let ytPlayer, isPlayerReady = false;
     let visualizerAnimationId;
+
+    // --- FUNÇÕES DO TOUR ---
+    const startTour = () => {
+        // Assegura que o painel de música está expandido para o passo do tour
+        const tour = introJs();
+        tour.onbeforechange((targetElement) => {
+            if (targetElement.id === 'music-player-container' && isMusicPlayerCollapsed) {
+                expandMusicPlayer();
+            }
+        });
+        tour.oncomplete(() => {
+            localStorage.setItem('pomodoroTourCompleted', 'true');
+        });
+        tour.onexit(() => {
+            localStorage.setItem('pomodoroTourCompleted', 'true');
+        });
+        tour.setOptions({
+            nextLabel: 'Próximo &rarr;',
+            prevLabel: '&larr; Anterior',
+            doneLabel: 'Concluir',
+            tooltipClass: 'custom-tooltip'
+        }).start();
+    };
     
     // --- FUNÇÕES DE ANIMAÇÃO E UI DO PLAYER ---
     function startVisualizer() {
@@ -342,7 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     };
     
-    // CORRIGIDO: Esta função agora só atualiza o tempo e o anel de progresso.
     const updateTimerDisplay = () => {
         const minutes = Math.floor(timeRemaining / 60);
         const seconds = timeRemaining % 60;
@@ -355,7 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
         progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
     };
 
-    // CORRIGIDO: Esta função é chamada a cada segundo, mas agora é muito mais leve.
     const updateTimer = () => {
         if (timeRemaining > 0) {
             timeRemaining--;
@@ -397,9 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     };
 
-    // CORRIGIDO: Esta função agora só atualiza a UI em mudanças de estado, não a cada segundo.
     const updateUI = () => {
-        updateTimerDisplay(); // Garante que o tempo está correto no início e em resets.
+        updateTimerDisplay(); 
     
         let modeColor, modeShadowColor;
         switch (mode) {
@@ -555,6 +576,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedCollapsedState = localStorage.getItem('pomodoroMusicCollapsed');
         isMusicPlayerCollapsed = savedCollapsedState !== null ? JSON.parse(savedCollapsedState) : true;
         musicPlayerContainer.classList.toggle('music-collapsed', isMusicPlayerCollapsed);
+
+        // Inicia o tour se for a primeira visita
+        if (!localStorage.getItem('pomodoroTourCompleted')) {
+            // Um pequeno atraso para garantir que a UI está totalmente renderizada
+            setTimeout(startTour, 500);
+        }
     };
     
     // --- EVENT LISTENERS ---
@@ -614,6 +641,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         toggleMusicPlayer();
     });
+
+    startTourBtn.addEventListener('click', startTour);
 
     // --- INICIALIZAÇÃO DA APLICAÇÃO ---
     function main() {
