@@ -122,28 +122,6 @@
             overflow: hidden;
             transition: all 0.5s ease;
         }
-
-        #music-controls-wrapper {
-            transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-            max-height: 300px;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .music-active #music-controls-wrapper {
-            max-height: 0;
-            opacity: 0;
-            transform: translateY(-20px);
-            pointer-events: none;
-            overflow: hidden;
-        }
-        
-        .music-active:hover #music-controls-wrapper {
-             max-height: 300px;
-             opacity: 1;
-             transform: translateY(0);
-             pointer-events: auto;
-        }
         
         @keyframes marquee {
             0%   { transform: translateX(0); }
@@ -170,6 +148,22 @@
         }
         .music-active #sound-wave-canvas {
             display: block;
+        }
+
+        /* NOVO: Estilos para o player de música recolhível */
+        #music-content {
+            transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.5s ease-in-out;
+            max-height: 500px; /* Altura suficiente para o conteúdo expandido */
+            opacity: 1;
+        }
+        .music-collapsed #music-content {
+            max-height: 0;
+            margin-top: 0 !important; /* Adicionado para remover margem quando recolhido */
+            opacity: 0;
+            pointer-events: none; /* Impede interação quando recolhido */
+        }
+        .music-collapsed #toggle-music-btn i {
+            transform: rotate(-90deg);
         }
     </style>
 </head>
@@ -210,50 +204,57 @@
             </div>
         </div>
         
+        <!-- Player de Música Atualizado -->
         <div id="music-player-container">
-            <h3 class="text-base font-semibold text-white mb-2 text-center">Música Ambiente</h3>
-            <div class="marquee-container">
-                <p id="music-status" class="marquee-text text-sm text-center text-gray-300">Nenhuma música selecionada</p>
+            <!-- CABEÇALHO COM BOTÃO DE TOGGLE -->
+            <div class="flex justify-between items-center cursor-pointer" id="music-header">
+                <h3 class="text-base font-semibold text-white">Música Ambiente</h3>
+                <button id="toggle-music-btn" class="text-gray-400 hover:text-white p-1">
+                    <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
+                </button>
             </div>
-            <canvas id="sound-wave-canvas"></canvas>
-            <div id="music-controls-wrapper">
-                <div class="mb-3 mt-3">
-                    <label for="youtube-link-input" class="text-xs text-gray-400 mb-1 block">Colar link do YouTube (Vídeo ou Playlist)</label>
-                    <div class="flex space-x-2">
-                        <input type="text" id="youtube-link-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="https://youtube.com/watch?v=...">
-                        <button id="play-link-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 rounded-lg transition-colors flex-shrink-0 text-sm font-semibold">Tocar</button>
+
+            <!-- CONTEÚDO RECOLHÍVEL -->
+            <div id="music-content">
+                <div class="marquee-container mt-2">
+                    <p id="music-status" class="marquee-text text-sm text-center text-gray-300">Nenhuma música selecionada</p>
+                </div>
+                <canvas id="sound-wave-canvas"></canvas>
+                <div id="music-controls-wrapper">
+                    <div class="mb-3 mt-3">
+                        <label for="youtube-link-input" class="text-xs text-gray-400 mb-1 block">Colar link do YouTube (Vídeo ou Playlist)</label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="youtube-link-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="https://youtube.com/watch?v=...">
+                            <button id="play-link-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 rounded-lg transition-colors flex-shrink-0 text-sm font-semibold">Tocar</button>
+                        </div>
+                    </div>
+                    <hr class="border-gray-700 my-3">
+                    <div>
+                        <label for="youtube-search-input" class="text-xs text-gray-400 mb-1 block">Ou pesquise por um vídeo/playlist</label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="youtube-search-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Ex: lofi hip hop radio">
+                            <button id="youtube-search-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors flex-shrink-0">
+                                <i data-lucide="search" class="w-5 h-5"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <hr class="border-gray-700 my-3">
-                <div>
-                    <label for="youtube-search-input" class="text-xs text-gray-400 mb-1 block">Ou pesquise por um vídeo/playlist</label>
-                    <div class="flex space-x-2">
-                        <input type="text" id="youtube-search-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Ex: lofi hip hop radio">
-                        <button id="youtube-search-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors flex-shrink-0">
-                            <i data-lucide="search" class="w-5 h-5"></i>
-                        </button>
-                    </div>
+                <div class="mt-4">
+                    <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                 </div>
-            </div>
-            <div class="mt-4">
-                <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
-                <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
             </div>
         </div>
 
-        <!-- Bloco de Controles do Player REVERTIDO E AJUSTADO -->
+
+        <!-- Bloco de Controles do Player -->
         <div id="player-controls" class="flex items-center justify-center space-x-4 mt-4">
-            <!-- Botão de Resetar (revertido) -->
             <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110">
                 <i data-lucide="rotate-cw" class="w-5 h-5"></i>
             </button>
-
-            <!-- Botão Principal de Play/Pause -->
             <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
                 <!-- O ícone será inserido pelo JavaScript -->
             </button>
-
-            <!-- Botão de Configurações -->
             <button id="settings-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110">
                 <i data-lucide="settings-2" class="w-5 h-5"></i>
             </button>
@@ -266,7 +267,7 @@
         </div>
     </div>
 
-    <!-- Modais (sem alteração) -->
+    <!-- Modais -->
     <div id="alert-modal-overlay" class="modal-overlay">
         <div class="modal-content text-center">
             <p id="alert-modal-message" class="mb-4"></p>
