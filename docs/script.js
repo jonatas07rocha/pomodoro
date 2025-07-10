@@ -412,6 +412,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isRunning && mode === 'focus') {
                 currentSessionFocusTime++;
             }
+            // CORRIGIDO: A chamada para atualizar a UI estava faltando aqui.
+            updateTimerDisplay();
         } else {
             clearInterval(timer);
             switchMode();
