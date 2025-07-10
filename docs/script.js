@@ -412,7 +412,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isRunning && mode === 'focus') {
                 currentSessionFocusTime++;
             }
-            // CORRIGIDO: A chamada para atualizar a UI estava faltando aqui.
             updateTimerDisplay();
         } else {
             clearInterval(timer);
@@ -476,7 +475,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
     
-        progressRing.className = `text-${modeColor}-500`;
+        // CORRIGIDO: Ajusta a cor do anel para combinar com o botão durante as pausas.
+        progressRing.className = `text-${modeColor}-${mode === 'focus' ? '500' : '600'}`;
         progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
     
         if (isRunning) {
