@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tour.onexit(() => {
             localStorage.setItem('pomodoroTourCompleted', 'true');
         });
-        // CORRIGIDO: Utiliza os caracteres Unicode diretamente em vez de entidades HTML.
         tour.setOptions({
             nextLabel: 'Próximo →',
             prevLabel: '← Anterior',
@@ -452,32 +451,67 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     };
     
+    // --- FUNÇÕES DE GERENCIAMENTO DE TAREFAS (MODIFICADAS) ---
+
+    const toggleEditState = (id) => {
+        tasks.forEach(task => {
+            // Ativa o modo de edição para a tarefa-alvo e desativa para todas as outras.
+            task.isEditing = task.id === id ? !task.isEditing : false;
+        });
+        renderTasks();
+        // Após re-renderizar, encontra o novo input e foca nele.
+        const input = document.querySelector(`[data-edit-input-id="${id}"]`);
+        if (input) {
+            input.focus();
+            input.select(); // Seleciona o texto para facilitar a substituição
+        }
+    };
+
+    const updateTaskName = (id, newName) => {
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+            // Só atualiza se o novo nome não estiver vazio.
+            if (newName) {
+                task.name = newName;
+            }
+            task.isEditing = false; // Sai do modo de edição
+            renderTasks(); // Re-renderiza para mostrar as mudanças e salvar o estado
+        }
+    };
+
     const renderTasks = () => {
         tasks.sort((a, b) => a.completed - b.completed);
         taskListEl.innerHTML = tasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione sua primeira tarefa!</p>' : '';
+        
         tasks.forEach(task => {
             const taskEl = document.createElement('div');
             const isSelected = task.id === selectedTaskId;
             const isCompleted = task.completed;
+            const isEditing = task.isEditing;
+
             taskEl.className = `task-item flex justify-between items-center bg-gray-900 p-2 rounded-lg border-2 border-transparent cursor-pointer ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}`;
             taskEl.dataset.id = task.id;
             const checkboxIcon = isCompleted ? 'check-square' : 'square';
+
             taskEl.innerHTML = `
                 <div class="flex items-center flex-grow min-w-0">
                     <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-2 flex-shrink-0"><i data-lucide="${checkboxIcon}" class="w-5 h-5"></i></button>
-                    <span class="task-name truncate pr-2 text-sm">${task.name}</span>
+                    ${isEditing
+                        ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none" data-edit-input-id="${task.id}">`
+                        : `<span class="task-name truncate pr-2 text-sm">${task.name}</span>`
+                    }
                 </div>
                 <div class="flex items-center space-x-2 flex-shrink-0">
                     <span class="text-xs text-gray-400 font-bold flex items-center"><i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>${task.pomodoros}</span>
-                    <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button data-edit-id="${task.id}" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md">
+                        <i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i>
+                    </button>
+                    <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-1 rounded-md"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>`;
-            taskEl.addEventListener('click', (e) => {
-                if (!e.target.closest('.complete-btn') && !e.target.closest('.delete-btn')) {
-                    selectTask(task.id);
-                }
-            });
+            
             taskListEl.appendChild(taskEl);
         });
+
         updateCurrentTaskDisplay();
         saveState();
         lucide.createIcons();
@@ -486,12 +520,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const addTask = () => {
         const taskName = newTaskInput.value.trim();
         if (taskName) {
-            const newTask = { id: Date.now(), name: taskName, pomodoros: 0, completed: false };
+            // Adiciona a propriedade isEditing às novas tarefas
+            const newTask = { id: Date.now(), name: taskName, pomodoros: 0, completed: false, isEditing: false };
             tasks.push(newTask);
             newTaskInput.value = '';
             renderTasks();
             if (!selectedTaskId || tasks.find(t => t.id === selectedTaskId)?.completed) {
-               selectTask(newTask.id);
+                selectTask(newTask.id);
             }
         }
     };
@@ -521,10 +556,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectTask = (id) => {
         const task = tasks.find(t => t.id === id);
-        if (task && !task.completed) {
+        // Não permite selecionar se alguma tarefa estiver sendo editada
+        const isAnyTaskEditing = tasks.some(t => t.isEditing);
+        if (task && !task.completed && !isAnyTaskEditing) {
             selectedTaskId = id;
-            if (!isRunning && mode !== 'focus') resetTimer('focus');
-            else renderTasks();
+            if (!isRunning && mode !== 'focus') {
+                resetTimer('focus');
+            } else {
+                renderTasks();
+            }
         }
     };
     
@@ -557,7 +597,11 @@ document.addEventListener('DOMContentLoaded', () => {
         shortBreakDurationInput.value = settings.shortBreakDuration;
         longBreakDurationInput.value = settings.longBreakDuration;
         longBreakIntervalInput.value = settings.longBreakInterval;
+        
         tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
+        // Garante que nenhuma tarefa esteja em modo de edição ao carregar a página
+        tasks.forEach(t => t.isEditing = false);
+
         selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
         if (selectedTaskId) {
             const task = tasks.find(t => t.id === selectedTaskId);
@@ -577,14 +621,12 @@ document.addEventListener('DOMContentLoaded', () => {
         isMusicPlayerCollapsed = savedCollapsedState !== null ? JSON.parse(savedCollapsedState) : true;
         musicPlayerContainer.classList.toggle('music-collapsed', isMusicPlayerCollapsed);
 
-        // Inicia o tour se for a primeira visita
         if (!localStorage.getItem('pomodoroTourCompleted')) {
-            // Um pequeno atraso para garantir que a UI está totalmente renderizada
             setTimeout(startTour, 500);
         }
     };
     
-    // --- EVENT LISTENERS ---
+    // --- EVENT LISTENERS (MODIFICADOS) ---
     startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
     resetBtn.addEventListener('click', () => resetTimer(mode));
     settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
@@ -609,11 +651,72 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.addEventListener('click', (e) => { if (e.target === overlay) hideModal(overlay); });
     });
 
+    // Listener de clique unificado para a lista de tarefas
     taskListEl.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('.delete-btn');
-        if (deleteBtn) { e.stopPropagation(); deleteTask(parseInt(deleteBtn.dataset.deleteId)); return; }
         const completeBtn = e.target.closest('.complete-btn');
-        if (completeBtn) { e.stopPropagation(); toggleTaskCompleted(parseInt(completeBtn.dataset.completeId)); }
+        const editBtn = e.target.closest('.edit-btn');
+        const taskItem = e.target.closest('.task-item');
+
+        if (deleteBtn) {
+            e.stopPropagation();
+            deleteTask(parseInt(deleteBtn.dataset.deleteId));
+            return;
+        }
+
+        if (completeBtn) {
+            e.stopPropagation();
+            toggleTaskCompleted(parseInt(completeBtn.dataset.completeId));
+            return;
+        }
+
+        if (editBtn) {
+            e.stopPropagation();
+            const id = parseInt(editBtn.dataset.editId);
+            const task = tasks.find(t => t.id === id);
+            if (task && task.isEditing) { // É um botão de "salvar"
+                const input = taskListEl.querySelector(`[data-edit-input-id="${id}"]`);
+                if (input) updateTaskName(id, input.value.trim());
+            } else { // É um botão de "editar"
+                toggleEditState(id);
+            }
+            return;
+        }
+
+        // Se nenhum botão foi clicado, é um clique para selecionar a tarefa
+        if (taskItem) {
+            selectTask(parseInt(taskItem.dataset.id));
+        }
+    });
+
+    // Listeners para salvar/cancelar com o teclado
+    taskListEl.addEventListener('keyup', (e) => {
+        if (e.target.matches('.task-edit-input')) {
+            const id = parseInt(e.target.dataset.editInputId);
+            if (e.key === 'Enter') {
+                updateTaskName(id, e.target.value.trim());
+            } else if (e.key === 'Escape') {
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    task.isEditing = false;
+                    renderTasks();
+                }
+            }
+        }
+    });
+
+    // Listener para salvar quando o input perde o foco
+    taskListEl.addEventListener('focusout', (e) => {
+        if (e.target.matches('.task-edit-input')) {
+            const id = parseInt(e.target.dataset.editInputId);
+            const task = tasks.find(t => t.id === id);
+            // Timeout para evitar conflito com o clique no botão de salvar
+            setTimeout(() => {
+                if (task && task.isEditing) {
+                    updateTaskName(id, e.target.value.trim());
+                }
+            }, 150);
+        }
     });
     
     if (navigator.share) {
