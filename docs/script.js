@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskListEl = document.getElementById('task-list');
     const currentTaskDisplay = document.getElementById('current-task-display');
     const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
+    // Elementos do Modal de Estatísticas
+    const statsBtn = document.getElementById('stats-btn');
+    const statsModalOverlay = document.getElementById('stats-modal-overlay');
+    const statsModalCloseBtn = document.getElementById('stats-modal-close-btn');
+    const statsTotalTimeEl = document.getElementById('stats-total-time');
+    const statsResetBtn = document.getElementById('stats-reset-btn');
     const alertModalOverlay = document.getElementById('alert-modal-overlay');
     const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
     const settingsModalOverlay = document.getElementById('settings-modal-overlay');
@@ -44,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvasCtx = canvas.getContext('2d');
     const musicHeader = document.getElementById('music-header');
     const toggleMusicBtn = document.getElementById('toggle-music-btn');
-    const startTourBtn = document.getElementById('start-tour-btn'); // Botão do Tour
+    const startTourBtn = document.getElementById('start-tour-btn');
 
     // --- ESTADO DA APLICAÇÃO ---
     let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
@@ -52,7 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
     let youtubeApiKey = '';
     let isMusicPlayerCollapsed = true;
-    let wasMusicPlaying = false; // Adicionado: "Memória" para o estado da música
+    let wasMusicPlaying = false;
+    let currentSessionFocusTime = 0;
 
     // --- ESTADO DO PLAYER DE MÚSICA E ANIMAÇÕES ---
     let ytPlayer, isPlayerReady = false;
@@ -276,11 +283,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const videoData = ytPlayer.getVideoData();
             musicStatus.textContent = videoData.title || "A tocar...";
             updateMarquee();
-            wasMusicPlaying = true; // Modificado: Define que a música está ativa
+            wasMusicPlaying = true;
         } else {
             musicPlayerContainer.classList.remove('music-active');
             stopVisualizer();
-            // Se o vídeo for pausado por qualquer motivo (exceto fim), consideramos que o usuário pode querer retomar
             if (event.data !== YT.PlayerState.ENDED) {
                  wasMusicPlaying = false;
             }
@@ -299,6 +305,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- FUNÇÕES PRINCIPAIS DO POMODORO ---
+    const commitFocusTime = () => {
+        if (currentSessionFocusTime > 0 && selectedTaskId) {
+            const task = tasks.find(t => t.id === selectedTaskId);
+            if (task) {
+                task.focusTime += currentSessionFocusTime;
+            }
+        }
+        currentSessionFocusTime = 0;
+        renderTasks();
+    };
+
     const showNotification = (title, body) => {
         if ('Notification' in window && Notification.permission === 'granted') {
             const task = tasks.find(t => t.id === selectedTaskId);
@@ -360,7 +377,6 @@ document.addEventListener('DOMContentLoaded', () => {
         isRunning = true;
         updateUI();
         timer = setInterval(updateTimer, 1000);
-        // Modificado: Usa a variável wasMusicPlaying para decidir se retoma a música
         if (isPlayerReady && wasMusicPlaying && !isMusicPlayerCollapsed) {
             ytPlayer.playVideo();
         }
@@ -370,8 +386,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isRunning) return;
         isRunning = false;
         clearInterval(timer);
+        commitFocusTime();
         if (isPlayerReady) {
-            // Modificado: Guarda o estado da música antes de pausar
             wasMusicPlaying = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
             ytPlayer.pauseVideo();
         }
@@ -393,7 +409,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTimer = () => {
         if (timeRemaining > 0) {
             timeRemaining--;
-            updateTimerDisplay();
+            if (isRunning && mode === 'focus') {
+                currentSessionFocusTime++;
+            }
         } else {
             clearInterval(timer);
             switchMode();
@@ -401,16 +419,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const switchMode = () => {
+        commitFocusTime();
         if (isPlayerReady) {
-            // Modificado: Guarda o estado da música antes de pausar
             wasMusicPlaying = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
             ytPlayer.pauseVideo();
         }
         isRunning = false;
         let notificationTitle = '', notificationBody = '';
         if (mode === 'focus') {
-            const task = tasks.find(t => t.id === selectedTaskId);
-            if (task) task.pomodoros++;
             pomodorosCompleted++;
             renderTasks();
             mode = (pomodorosCompleted % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
@@ -427,9 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const resetTimer = (forceMode = null) => {
         clearInterval(timer);
+        commitFocusTime();
         isRunning = false;
         if (isPlayerReady) {
-             // Modificado: Guarda o estado da música antes de pausar
             wasMusicPlaying = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
             ytPlayer.pauseVideo();
         }
@@ -480,8 +496,30 @@ document.addEventListener('DOMContentLoaded', () => {
     
         lucide.createIcons();
     };
+
+    // --- FUNÇÕES DE ESTATÍSTICAS ---
+    const formatTime = (totalSeconds) => {
+        if (totalSeconds < 60) return `${totalSeconds}s`;
+        const minutes = Math.floor(totalSeconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        if (hours > 0) {
+            return `${hours}h ${remainingMinutes}m`;
+        }
+        return `${minutes}m`;
+    };
+
+    const updateStatsDisplay = () => {
+        const totalFocusSeconds = tasks.reduce((acc, task) => acc + (task.focusTime || 0), 0);
+        statsTotalTimeEl.textContent = formatTime(totalFocusSeconds);
+    };
+
+    const resetStats = () => {
+        tasks.forEach(task => task.focusTime = 0);
+        renderTasks();
+    };
     
-    // --- FUNÇÕES DE GERENCIAMENTO DE TAREFAS (MODIFICADAS) ---
+    // --- FUNÇÕES DE GERENCIAMENTO DE TAREFAS ---
 
     const toggleEditState = (id) => {
         tasks.forEach(task => {
@@ -529,7 +567,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 </div>
                 <div class="flex items-center space-x-2 flex-shrink-0">
-                    <span class="text-xs text-gray-400 font-bold flex items-center"><i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>${task.pomodoros}</span>
+                    <span class="text-xs text-gray-400 font-bold flex items-center">
+                        <i data-lucide="clock" class="w-4 h-4 mr-1 text-blue-400"></i>
+                        ${formatTime(task.focusTime || 0)}
+                    </span>
                     <button data-edit-id="${task.id}" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md">
                         <i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i>
                     </button>
@@ -540,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         updateCurrentTaskDisplay();
+        updateStatsDisplay();
         saveState();
         lucide.createIcons();
     };
@@ -547,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addTask = () => {
         const taskName = newTaskInput.value.trim();
         if (taskName) {
-            const newTask = { id: Date.now(), name: taskName, pomodoros: 0, completed: false, isEditing: false };
+            const newTask = { id: Date.now(), name: taskName, focusTime: 0, completed: false, isEditing: false };
             tasks.push(newTask);
             newTaskInput.value = '';
             renderTasks();
@@ -568,6 +610,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const toggleTaskCompleted = (id) => {
+        commitFocusTime();
         const task = tasks.find(t => t.id === id);
         if (task) {
             task.completed = !task.completed;
@@ -581,6 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const selectTask = (id) => {
+        commitFocusTime();
         const task = tasks.find(t => t.id === id);
         const isAnyTaskEditing = tasks.some(t => t.isEditing);
         if (task && !task.completed && !isAnyTaskEditing) {
@@ -597,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const task = tasks.find(t => t.id === selectedTaskId);
         currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
         pomodoroCyclesEl.innerHTML = '';
-        if (!settings.longBreakInterval) return;
+        if (!settings.longBreakInterval || settings.longBreakInterval <= 0) return;
         const cyclesToShow = pomodorosCompleted % settings.longBreakInterval;
         for(let i = 0; i < settings.longBreakInterval; i++) {
             const icon = i < cyclesToShow ? '<i data-lucide="check-circle-2" class="text-green-500"></i>' : '<i data-lucide="circle" class="text-gray-600"></i>';
@@ -624,7 +668,10 @@ document.addEventListener('DOMContentLoaded', () => {
         longBreakIntervalInput.value = settings.longBreakInterval;
         
         tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
-        tasks.forEach(t => t.isEditing = false);
+        tasks.forEach(t => {
+            t.isEditing = false;
+            if (t.focusTime === undefined) t.focusTime = (t.pomodoros || 0) * (settings.focusDuration * 60);
+        });
 
         selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
         if (selectedTaskId) {
@@ -650,10 +697,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // --- EVENT LISTENERS (MODIFICADOS) ---
+    // --- EVENT LISTENERS ---
     startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
     resetBtn.addEventListener('click', () => resetTimer(mode));
     settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
+    statsBtn.addEventListener('click', () => showModal(statsModalOverlay));
+    statsResetBtn.addEventListener('click', resetStats);
+    statsModalCloseBtn.addEventListener('click', () => hideModal(statsModalOverlay));
+
     settingsSaveBtn.addEventListener('click', () => {
         settings.focusDuration = parseInt(focusDurationInput.value) || 25;
         settings.shortBreakDuration = parseInt(shortBreakDurationInput.value) || 5;
@@ -671,7 +722,7 @@ document.addEventListener('DOMContentLoaded', () => {
     alertModalCloseBtn.addEventListener('click', () => hideModal(alertModalOverlay));
     searchResultsCloseBtn.addEventListener('click', () => hideModal(searchResultsModalOverlay));
     
-    [alertModalOverlay, settingsModalOverlay, searchResultsModalOverlay].forEach(overlay => {
+    [alertModalOverlay, settingsModalOverlay, searchResultsModalOverlay, statsModalOverlay].forEach(overlay => {
         overlay.addEventListener('click', (e) => { if (e.target === overlay) hideModal(overlay); });
     });
 
