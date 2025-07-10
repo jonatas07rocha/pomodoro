@@ -423,9 +423,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
         let modeColor, modeShadowColor;
         switch (mode) {
-            case 'focus': modeColor = 'blue'; modeShadowColor = 'rgba(59, 130, 246, 0.7)'; break;
-            case 'shortBreak': modeColor = 'green'; modeShadowColor = 'rgba(34, 197, 94, 0.7)'; break;
-            case 'longBreak': modeColor = 'indigo'; modeShadowColor = 'rgba(99, 102, 241, 0.7)'; break;
+            case 'focus': 
+                modeColor = 'blue'; 
+                modeShadowColor = 'rgba(59, 130, 246, 0.7)'; 
+                break;
+            case 'shortBreak': 
+                modeColor = 'green'; 
+                modeShadowColor = 'rgba(34, 197, 94, 0.7)'; 
+                break;
+            case 'longBreak': 
+                // MODIFICADO: Alterado de 'indigo' para 'green' para manter a consistência nas pausas.
+                modeColor = 'green'; 
+                modeShadowColor = 'rgba(34, 197, 94, 0.7)'; 
+                break;
         }
     
         progressRing.className = `text-${modeColor}-500`;
