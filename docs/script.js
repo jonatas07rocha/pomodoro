@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
     let youtubeApiKey = '';
     let isMusicPlayerCollapsed = true;
+    let wasMusicPlaying = false; // Adicionado: "Memória" para o estado da música
 
     // --- ESTADO DO PLAYER DE MÚSICA E ANIMAÇÕES ---
     let ytPlayer, isPlayerReady = false;
@@ -275,9 +276,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const videoData = ytPlayer.getVideoData();
             musicStatus.textContent = videoData.title || "A tocar...";
             updateMarquee();
+            wasMusicPlaying = true; // Modificado: Define que a música está ativa
         } else {
             musicPlayerContainer.classList.remove('music-active');
             stopVisualizer();
+            // Se o vídeo for pausado por qualquer motivo (exceto fim), consideramos que o usuário pode querer retomar
+            if (event.data !== YT.PlayerState.ENDED) {
+                 wasMusicPlaying = false;
+            }
         }
     }
 
@@ -354,14 +360,21 @@ document.addEventListener('DOMContentLoaded', () => {
         isRunning = true;
         updateUI();
         timer = setInterval(updateTimer, 1000);
-        if (isPlayerReady && ytPlayer.getPlayerState() !== 1 && !isMusicPlayerCollapsed) ytPlayer.playVideo();
+        // Modificado: Usa a variável wasMusicPlaying para decidir se retoma a música
+        if (isPlayerReady && wasMusicPlaying && !isMusicPlayerCollapsed) {
+            ytPlayer.playVideo();
+        }
     };
 
     const pauseTimer = () => {
         if (!isRunning) return;
         isRunning = false;
         clearInterval(timer);
-        if (isPlayerReady) ytPlayer.pauseVideo();
+        if (isPlayerReady) {
+            // Modificado: Guarda o estado da música antes de pausar
+            wasMusicPlaying = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+            ytPlayer.pauseVideo();
+        }
         updateUI();
     };
     
@@ -388,7 +401,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const switchMode = () => {
-        if (isPlayerReady) ytPlayer.pauseVideo();
+        if (isPlayerReady) {
+            // Modificado: Guarda o estado da música antes de pausar
+            wasMusicPlaying = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+            ytPlayer.pauseVideo();
+        }
         isRunning = false;
         let notificationTitle = '', notificationBody = '';
         if (mode === 'focus') {
@@ -411,7 +428,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetTimer = (forceMode = null) => {
         clearInterval(timer);
         isRunning = false;
-        if (isPlayerReady) ytPlayer.pauseVideo();
+        if (isPlayerReady) {
+             // Modificado: Guarda o estado da música antes de pausar
+            wasMusicPlaying = ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+            ytPlayer.pauseVideo();
+        }
         mode = forceMode || mode;
         timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
         totalTime = timeRemaining;
@@ -432,7 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 modeShadowColor = 'rgba(34, 197, 94, 0.7)'; 
                 break;
             case 'longBreak': 
-                // MODIFICADO: Alterado de 'indigo' para 'green' para manter a consistência nas pausas.
                 modeColor = 'green'; 
                 modeShadowColor = 'rgba(34, 197, 94, 0.7)'; 
                 break;
@@ -465,27 +485,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const toggleEditState = (id) => {
         tasks.forEach(task => {
-            // Ativa o modo de edição para a tarefa-alvo e desativa para todas as outras.
             task.isEditing = task.id === id ? !task.isEditing : false;
         });
         renderTasks();
-        // Após re-renderizar, encontra o novo input e foca nele.
         const input = document.querySelector(`[data-edit-input-id="${id}"]`);
         if (input) {
             input.focus();
-            input.select(); // Seleciona o texto para facilitar a substituição
+            input.select();
         }
     };
 
     const updateTaskName = (id, newName) => {
         const task = tasks.find(t => t.id === id);
         if (task) {
-            // Só atualiza se o novo nome não estiver vazio.
             if (newName) {
                 task.name = newName;
             }
-            task.isEditing = false; // Sai do modo de edição
-            renderTasks(); // Re-renderiza para mostrar as mudanças e salvar o estado
+            task.isEditing = false;
+            renderTasks();
         }
     };
 
@@ -530,7 +547,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const addTask = () => {
         const taskName = newTaskInput.value.trim();
         if (taskName) {
-            // Adiciona a propriedade isEditing às novas tarefas
             const newTask = { id: Date.now(), name: taskName, pomodoros: 0, completed: false, isEditing: false };
             tasks.push(newTask);
             newTaskInput.value = '';
@@ -566,7 +582,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectTask = (id) => {
         const task = tasks.find(t => t.id === id);
-        // Não permite selecionar se alguma tarefa estiver sendo editada
         const isAnyTaskEditing = tasks.some(t => t.isEditing);
         if (task && !task.completed && !isAnyTaskEditing) {
             selectedTaskId = id;
@@ -609,7 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
         longBreakIntervalInput.value = settings.longBreakInterval;
         
         tasks = JSON.parse(localStorage.getItem('pomodoroTasks')) || [];
-        // Garante que nenhuma tarefa esteja em modo de edição ao carregar a página
         tasks.forEach(t => t.isEditing = false);
 
         selectedTaskId = JSON.parse(localStorage.getItem('pomodoroSelectedTaskId'));
@@ -661,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.addEventListener('click', (e) => { if (e.target === overlay) hideModal(overlay); });
     });
 
-    // Listener de clique unificado para a lista de tarefas
     taskListEl.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('.delete-btn');
         const completeBtn = e.target.closest('.complete-btn');
@@ -684,22 +697,20 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
             const id = parseInt(editBtn.dataset.editId);
             const task = tasks.find(t => t.id === id);
-            if (task && task.isEditing) { // É um botão de "salvar"
+            if (task && task.isEditing) {
                 const input = taskListEl.querySelector(`[data-edit-input-id="${id}"]`);
                 if (input) updateTaskName(id, input.value.trim());
-            } else { // É um botão de "editar"
+            } else {
                 toggleEditState(id);
             }
             return;
         }
 
-        // Se nenhum botão foi clicado, é um clique para selecionar a tarefa
         if (taskItem) {
             selectTask(parseInt(taskItem.dataset.id));
         }
     });
 
-    // Listeners para salvar/cancelar com o teclado
     taskListEl.addEventListener('keyup', (e) => {
         if (e.target.matches('.task-edit-input')) {
             const id = parseInt(e.target.dataset.editInputId);
@@ -715,12 +726,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Listener para salvar quando o input perde o foco
     taskListEl.addEventListener('focusout', (e) => {
         if (e.target.matches('.task-edit-input')) {
             const id = parseInt(e.target.dataset.editInputId);
             const task = tasks.find(t => t.id === id);
-            // Timeout para evitar conflito com o clique no botão de salvar
             setTimeout(() => {
                 if (task && task.isEditing) {
                     updateTaskName(id, e.target.value.trim());
