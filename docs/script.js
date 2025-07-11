@@ -459,25 +459,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateUI = () => {
         updateTimerDisplay(); 
     
-        let modeColor, modeShadowColor;
+        let modeColor;
         switch (mode) {
             case 'focus': 
                 modeColor = 'blue'; 
-                modeShadowColor = 'rgba(59, 130, 246, 0.7)'; 
                 break;
             case 'shortBreak': 
                 modeColor = 'green'; 
-                modeShadowColor = 'rgba(34, 197, 94, 0.7)'; 
                 break;
             case 'longBreak': 
                 modeColor = 'green'; 
-                modeShadowColor = 'rgba(34, 197, 94, 0.7)'; 
                 break;
         }
     
-        // CORRIGIDO: Ajusta a cor do anel para combinar com o botão durante as pausas.
+        // Ajusta a cor do anel para combinar com o modo atual. O efeito de halo foi removido.
         progressRing.className = `text-${modeColor}-${mode === 'focus' ? '500' : '600'}`;
-        progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
+        // A linha que aplicava o filtro de sombra (halo) foi removida para uma UI mais limpa e consistente.
+        // progressRing.style.filter = `drop-shadow(0 0 5px ${modeShadowColor})`;
     
         if (isRunning) {
             startPauseBtn.innerHTML = `
@@ -493,7 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
     
-        startPauseBtn.style.boxShadow = `0 0 20px ${modeShadowColor}`;
+        // O brilho colorido do botão também foi removido para manter a consistência visual.
+        // startPauseBtn.style.boxShadow = `0 0 20px ${modeShadowColor}`;
         startPauseBtn.className = `w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center bg-${modeColor}-600 hover:bg-${modeColor}-700`;
     
         lucide.createIcons();
@@ -827,3 +826,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.YT_API_READY) { main(); initializePlayer(); } 
     else { document.addEventListener('ytApiReady', () => { main(); initializePlayer(); }, { once: true }); }
 });
+
