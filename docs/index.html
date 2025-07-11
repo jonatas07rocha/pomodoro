@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Foco Total - Pomodoro</title>
+    <title>Foco Total Core</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <!-- Intro.js (Para o Tour) -->
-    <link rel="stylesheet" href="https://unpkg.com/intro.js/minified/introjs.min.css">
     <!-- Favicon SVG Personalizado (Tomate) -->
     <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22><circle cx=%2212%22 cy=%2213%22 r=%229%22 fill=%22%23FF6347%22/><path d=%22M16 8c-2 2-4 2-6 0%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/><path d=%22M12 8V2l2 2%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/></svg>">
     <style>
@@ -24,7 +22,7 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 1rem;
             box-sizing: border-box;
         }
         
@@ -37,19 +35,20 @@
             flex-direction: column;
             color: #D1D5DB;
             width: 100%;
-            max-width: 390px;
+            max-width: 420px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
 
         .timer-panel {
             background-color: #111827; 
             border-radius: 1.25rem;
             padding: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.5); 
         }
 
         #progress-ring {
-            transition: stroke-dashoffset 1s linear, stroke 0.5s ease, filter 0.5s ease;
+            transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
         }
 
         .task-item {
@@ -59,12 +58,6 @@
             background-color: #374151;
             border-color: #3B82F6;
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
-        }
-        .task-item.completed {
-            opacity: 0.6;
-        }
-        .task-item.completed .task-name {
-            text-decoration: line-through;
         }
         
         #timer-display {
@@ -109,105 +102,29 @@
             transform: scale(0.9);
             transition: transform 0.3s;
             width: 90%;
-            max-width: 420px;
+            max-width: 500px;
         }
         .modal-overlay.visible .modal-content {
             transform: scale(1);
         }
-        
-        #music-player-container {
-            background-color: #111827;
-            border-radius: 1rem;
-            padding: 1rem;
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.5s ease;
-        }
-        
-        @keyframes marquee {
-            0%   { transform: translateX(0); }
-            10%  { transform: translateX(0); }
-            90%  { transform: translateX(calc(-100% - 20px)); }
-            100% { transform: translateX(calc(-100% - 20px)); }
-        }
-        .marquee-container {
-            width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .marquee-text.scrolling {
-            display: inline-block;
-            padding-right: 20px;
-            animation: marquee 10s linear infinite;
-        }
-
-        #sound-wave-canvas {
-            width: 100%;
-            height: 40px;
-            display: none;
-            margin-top: 0.5rem;
-        }
-        .music-active #sound-wave-canvas {
-            display: block;
-        }
-
-        #music-content {
-            transition: max-height 0.5s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.5s ease-in-out;
-            max-height: 500px;
-            opacity: 1;
-        }
-        .music-collapsed #music-content {
-            max-height: 0;
-            margin-top: 0 !important;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .music-collapsed #toggle-music-btn i {
-            transform: rotate(-90deg);
-        }
-
-        /* Custom Intro.js Theme */
-        .introjs-tooltip {
-            background-color: #1F2937;
-            color: #E5E7EB;
-            border: 1px solid #3B82F6;
-            border-radius: 0.75rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
-            font-family: 'Inter', sans-serif;
-        }
-        .introjs-arrow.top, .introjs-arrow.top-middle, .introjs-arrow.top-right { border-bottom-color: #1F2937; }
-        .introjs-arrow.bottom, .introjs-arrow.bottom-middle, .introjs-arrow.bottom-right { border-top-color: #1F2937; }
-        .introjs-arrow.left, .introjs-arrow.left-bottom { border-right-color: #1F2937; }
-        .introjs-arrow.right, .introjs-arrow.right-bottom { border-left-color: #1F2937; }
-        .introjs-tooltiptext { font-size: 0.9rem; line-height: 1.5; }
-        .introjs-button {
-            background-color: #3B82F6;
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
-            text-shadow: none;
-            transition: background-color 0.2s;
-        }
-        .introjs-button:hover { background-color: #2563EB; }
-        .introjs-skipbutton { color: #9CA3AF; }
-        .introjs-skipbutton:hover { color: white; }
-        .introjs-progress { background-color: #374151; }
-        .introjs-progressbar { background-color: #3B82F6; }
     </style>
 </head>
 <body>
-    <div id="youtube-player-container" class="absolute top-[-9999px] left-[-9999px]">
-        <div id="youtube-player"></div>
-    </div>
-
     <div id="device-shell" class="device-shell">
-        <header class="text-center mb-4">
-            <h1 class="text-2xl font-bold text-white">Foco Total</h1>
+        <!-- CABEÇALHO -->
+        <header class="flex justify-between items-center mb-4">
+            <h1 class="text-xl font-bold text-white">Foco Total <span class="text-blue-400 font-semibold">Core</span></h1>
+            <div id="focus-method-toggle" class="flex bg-gray-900 rounded-lg p-1 text-xs font-semibold">
+                <button data-method="pomodoro" class="method-btn px-3 py-1 rounded-md transition-colors">Pomodoro</button>
+                <button data-method="adaptativo" class="method-btn px-3 py-1 rounded-md transition-colors">Adaptativo</button>
+            </div>
+            <button id="help-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Ajuda">
+                <i data-lucide="help-circle" class="w-6 h-6"></i>
+            </button>
         </header>
 
-        <div class="timer-panel" data-step="1" data-intro="Este é o seu cronómetro. Ele mostra o tempo restante para as suas sessões de foco e pausas.">
+        <!-- PAINEL DO TIMER -->
+        <div class="timer-panel">
             <div class="relative w-56 h-56 mx-auto">
                 <svg class="w-full h-full" viewBox="0 0 100 100">
                     <circle class="text-gray-800" stroke-width="7" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
@@ -219,95 +136,73 @@
             </div>
         </div>
 
-        <div class="text-center mb-2" data-step="2" data-intro="A tarefa em que está a trabalhar no momento aparecerá aqui.">
+        <!-- TAREFA ATUAL E CICLOS -->
+        <div class="text-center mb-2">
             <p class="text-gray-400 text-sm">Foco em:</p>
             <p id="current-task-display" class="text-white font-semibold text-base truncate">Nenhuma tarefa selecionada</p>
             <div id="pomodoro-cycles" class="flex justify-center items-center space-x-2 mt-1 h-6"></div>
         </div>
 
-        <div class="flex-grow flex flex-col min-h-[150px] mb-4" data-step="3" data-intro="Aqui pode adicionar e gerir as suas tarefas. Clique numa tarefa para a selecionar.">
-            <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas</h2>
+        <!-- LISTA DE TAREFAS -->
+        <div class="flex-grow flex flex-col min-h-[200px] mb-4">
+            <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas do Dia</h2>
             <div id="task-list" class="space-y-2 flex-grow overflow-y-auto pr-2"></div>
-            <div class="flex mt-3 space-x-2">
+            <!-- FORMULÁRIO DE ADIÇÃO DE TAREFA -->
+            <div class="flex mt-3 space-x-2 items-center bg-gray-900 p-2 rounded-lg">
                 <input type="text" id="new-task-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
-                <button id="add-task-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm flex-shrink-0">Add</button>
+                <div class="flex items-center">
+                    <label for="new-task-estimate" class="text-sm text-gray-400 mr-1 font-bold">#</label>
+                    <input type="number" id="new-task-estimate" class="w-12 bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="1" min="1">
+                </div>
+                <button id="add-task-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold w-10 h-10 rounded-lg transition-colors text-2xl flex-shrink-0 flex items-center justify-center">+</button>
             </div>
         </div>
         
-        <div id="music-player-container" class="mb-4" data-step="5" data-intro="Quer uma música de fundo? Expanda este painel para procurar vídeos ou colar um link do YouTube.">
-            <div class="flex justify-between items-center cursor-pointer" id="music-header">
-                <h3 class="text-base font-semibold text-white">Música Ambiente</h3>
-                <button id="toggle-music-btn" class="text-gray-400 hover:text-white p-1">
-                    <i data-lucide="chevron-down" class="w-5 h-5 transition-transform duration-300"></i>
+        <!-- CONTROLES -->
+        <div class="flex flex-col items-center space-y-4 mt-4">
+            <!-- CONTROLES PRINCIPAIS -->
+            <div id="player-controls" class="flex items-center justify-center space-x-4">
+                <button id="internal-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Interna">
+                    <i data-lucide="zap-off" class="w-6 h-6"></i>
+                </button>
+                <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
+                </button>
+                <button id="external-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Externa">
+                    <i data-lucide="user-x" class="w-6 h-6"></i>
                 </button>
             </div>
-            <div id="music-content">
-                <div class="marquee-container mt-2">
-                    <p id="music-status" class="marquee-text text-sm text-center text-gray-300">Nenhuma música selecionada</p>
-                </div>
-                <canvas id="sound-wave-canvas"></canvas>
-                <div id="music-controls-wrapper">
-                    <div class="mb-3 mt-3">
-                        <label for="youtube-link-input" class="text-xs text-gray-400 mb-1 block">Colar link do YouTube (Vídeo ou Playlist)</label>
-                        <div class="flex space-x-2">
-                            <input type="text" id="youtube-link-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="https://youtube.com/watch?v=...">
-                            <button id="play-link-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 rounded-lg transition-colors flex-shrink-0 text-sm font-semibold">Tocar</button>
-                        </div>
-                    </div>
-                    <hr class="border-gray-700 my-3">
-                    <div>
-                        <label for="youtube-search-input" class="text-xs text-gray-400 mb-1 block">Ou pesquise por um vídeo/playlist</label>
-                        <div class="flex space-x-2">
-                            <input type="text" id="youtube-search-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Ex: lofi hip hop radio">
-                            <button id="youtube-search-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors flex-shrink-0">
-                                <i data-lucide="search" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <label for="volume-slider" class="text-xs text-gray-400">Volume</label>
-                    <input type="range" id="volume-slider" min="0" max="100" value="50" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                </div>
+            <!-- CONTROLES SECUNDÁRIOS -->
+            <div id="secondary-controls" class="flex items-center justify-center space-x-6">
+                 <button id="reset-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Zerar o dia">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+                <button id="stats-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Ver Estatísticas">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                </button>
+                <button id="settings-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Configurações">
+                    <i data-lucide="settings-2" class="w-5 h-5"></i>
+                </button>
             </div>
-        </div>
-
-        <div id="player-controls" class="flex items-center justify-center space-x-4 mt-4" data-step="4" data-intro="Use estes botões para iniciar, pausar ou reiniciar o cronómetro.">
-            <button id="reset-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110">
-                <i data-lucide="rotate-cw" class="w-5 h-5"></i>
-            </button>
-            <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
-            </button>
-            <button id="settings-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-3 rounded-full transition-colors transform hover:scale-110" data-step="6" data-intro="Clique aqui para ajustar a duração dos ciclos, configurar notificações e muito mais.">
-                <i data-lucide="settings-2" class="w-5 h-5"></i>
-            </button>
-        </div>
-
-        <div class="flex items-center justify-center space-x-2 mt-4">
-             <button id="share-btn" class="bg-transparent hover:bg-gray-700 text-gray-400 font-bold py-2 px-4 rounded-xl transition-colors text-xs flex items-center justify-center gap-2 mx-auto">
-                 <i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar
-            </button>
-            <!-- Botão de Estatísticas -->
-            <button id="stats-btn" class="bg-transparent hover:bg-gray-700 text-gray-400 p-2 rounded-full transition-colors">
-                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-            </button>
-            <!-- Botão do Tour -->
-            <button id="start-tour-btn" class="bg-transparent hover:bg-gray-700 text-gray-400 p-2 rounded-full transition-colors">
-                <i data-lucide="help-circle" class="w-5 h-5"></i>
-            </button>
         </div>
     </div>
 
-    <!-- Modais -->
+    <!-- MODAIS -->
     <div id="alert-modal-overlay" class="modal-overlay">
         <div class="modal-content text-center">
             <p id="alert-modal-message" class="mb-4"></p>
             <button id="alert-modal-close-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">OK</button>
         </div>
     </div>
+    <div id="session-end-modal-overlay" class="modal-overlay">
+        <div class="modal-content text-center">
+            <h2 class="text-xl font-bold text-white mb-2">Sessão de Foco Finalizada!</h2>
+            <p id="session-end-message" class="mb-6 text-gray-300"></p>
+            <button id="session-end-close-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Ótimo!</button>
+        </div>
+    </div>
     <div id="settings-modal-overlay" class="modal-overlay">
         <div class="modal-content">
-            <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações & Ajuda</h2>
+            <h2 class="text-xl font-bold text-white mb-4 text-center">Configurações</h2>
             <div class="mb-4">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Duração (minutos)</h3>
                 <div class="grid grid-cols-3 gap-2 text-center">
@@ -326,27 +221,6 @@
                 </div>
             </div>
             <div class="mb-4">
-                <h3 class="text-base font-semibold text-blue-400 mb-3">YouTube e Notificações</h3>
-                <div class="bg-gray-800 p-3 rounded-lg space-y-3">
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <label for="youtube-api-key" class="block text-xs font-medium text-gray-300">Chave da API do YouTube (para busca)</label>
-                            <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-400 hover:underline flex items-center gap-1">
-                                Obter chave
-                                <i data-lucide="help-circle" class="w-4 h-4"></i>
-                            </a>
-                        </div>
-                        <p id="api-key-prompt-msg" class="text-xs text-yellow-400 mt-1 hidden">É necessária uma chave para a busca funcionar.</p>
-                        <input type="password" id="youtube-api-key" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Cole sua chave aqui">
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm text-gray-300">Avisar ao fim de cada ciclo.</p>
-                        <button id="enable-notifications-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg transition-colors text-xs">Ativar</button>
-                    </div>
-                    <p id="notifications-status-msg" class="text-xs text-gray-500 pl-1"></p>
-                </div>
-            </div>
-            <div class="mb-4">
                <h3 class="text-base font-semibold text-blue-400 mb-3">Outros Ajustes</h3>
                <div>
                     <label for="long-break-interval" class="block text-xs font-medium text-gray-300">Pomodoros para pausa longa</label>
@@ -358,34 +232,656 @@
             </button>
         </div>
     </div>
-    <div id="search-results-modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <h2 class="text-xl font-bold text-white mb-4">Resultados da Busca</h2>
-            <div id="search-results-list" class="space-y-2 overflow-y-auto max-h-[60vh] pr-2"></div>
-            <button id="search-results-close-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl mt-4 transition-colors">Fechar</button>
-        </div>
-    </div>
-    <!-- Modal de Estatísticas ADICIONADO -->
     <div id="stats-modal-overlay" class="modal-overlay">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">Estatísticas do Dia</h2>
-                <button id="stats-reset-btn" class="text-gray-400 hover:text-white text-xs flex items-center gap-1">
-                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-                    Zerar
-                </button>
+                <h2 class="text-xl font-bold text-white">Relatório do Dia</h2>
             </div>
-            <div class="text-center bg-gray-800 p-4 rounded-lg">
-                 <p class="text-gray-400 text-sm">Tempo total de foco:</p>
-                 <p id="stats-total-time" class="text-white font-bold text-3xl">0m</p>
-            </div>
+            <div id="stats-content" class="bg-gray-800 p-4 rounded-lg max-h-80 overflow-y-auto"></div>
             <button id="stats-modal-close-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl mt-6 transition-colors">Fechar</button>
         </div>
     </div>
+    <div id="help-modal-overlay" class="modal-overlay">
+        <div class="modal-content text-sm">
+            <h2 class="text-xl font-bold text-white mb-4 text-center">Ajuda</h2>
+            <div id="help-content-pomodoro" class="space-y-4 text-gray-300">
+                <h3 class="text-lg font-semibold text-blue-400">O que é a Técnica Pomodoro?</h3>
+                <p>É um método que usa um cronômetro para dividir o trabalho em períodos de foco intenso (geralmente 25 min), separados por pausas curtas.</p>
+                <ol class="list-decimal list-inside space-y-2 bg-gray-800 p-4 rounded-lg">
+                    <li>Escolha uma tarefa e inicie o timer.</li>
+                    <li>Trabalhe na tarefa sem interrupções.</li>
+                    <li>Ao final, faça uma pausa curta.</li>
+                    <li>Após 4 ciclos, faça uma pausa longa.</li>
+                </ol>
+            </div>
+            <div id="help-content-adaptativo" class="space-y-4 text-gray-300 hidden">
+                <h3 class="text-lg font-semibold text-blue-400">O que é o Método Adaptativo?</h3>
+                <p>É um método flexível onde você trabalha pelo tempo que conseguir se manter focado, sem um alarme para te interromper. É ideal para trabalho criativo e profundo.</p>
+                <ol class="list-decimal list-inside space-y-2 bg-gray-800 p-4 rounded-lg">
+                    <li>Escolha uma tarefa e inicie o cronômetro (ele contará para cima).</li>
+                    <li>Mergulhe na tarefa, mantendo o foco.</li>
+                    <li>Quando sentir que sua concentração está diminuindo, pare o cronômetro.</li>
+                    <li>Faça uma pausa e analise por quanto tempo conseguiu focar.</li>
+                </ol>
+            </div>
+            <button id="help-modal-close-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl mt-6 transition-colors">Entendi!</button>
+        </div>
+    </div>
+    <div id="reset-confirm-modal-overlay" class="modal-overlay">
+        <div class="modal-content text-center">
+            <h2 class="text-xl font-bold text-white mb-2">Zerar o Dia?</h2>
+            <p id="alert-modal-message-reset" class="mb-6 text-gray-300">Todas as tarefas e o progresso serão apagados. As configurações e o modo de foco serão mantidos. Deseja continuar?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="reset-cancel-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Cancelar</button>
+                <button id="reset-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Sim, Zerar</button>
+            </div>
+        </div>
+    </div>
+    
+    <audio id="silent-audio" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="></audio>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="https://unpkg.com/intro.js/minified/intro.min.js"></script>
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- ELEMENTOS DO DOM ---
+            const timerDisplay = document.getElementById('timer-display');
+            const startPauseBtn = document.getElementById('start-pause-btn');
+            const internalInterruptBtn = document.getElementById('internal-interrupt-btn');
+            const externalInterruptBtn = document.getElementById('external-interrupt-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const settingsBtn = document.getElementById('settings-btn');
+            const statsBtn = document.getElementById('stats-btn');
+            const helpBtn = document.getElementById('help-btn');
+            const progressRing = document.getElementById('progress-ring');
+            const newTaskInput = document.getElementById('new-task-input');
+            const newTaskEstimateInput = document.getElementById('new-task-estimate');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            const taskListEl = document.getElementById('task-list');
+            const currentTaskDisplay = document.getElementById('current-task-display');
+            const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
+            const silentAudio = document.getElementById('silent-audio');
+            const focusMethodToggle = document.getElementById('focus-method-toggle');
+            // Modais
+            const statsModalOverlay = document.getElementById('stats-modal-overlay');
+            const statsModalCloseBtn = document.getElementById('stats-modal-close-btn');
+            const statsContentEl = document.getElementById('stats-content');
+            const alertModalOverlay = document.getElementById('alert-modal-overlay');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+            const sessionEndModalOverlay = document.getElementById('session-end-modal-overlay');
+            const sessionEndCloseBtn = document.getElementById('session-end-close-btn');
+            const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+            const settingsSaveBtn = document.getElementById('settings-save-btn');
+            const helpModalOverlay = document.getElementById('help-modal-overlay');
+            const helpModalCloseBtn = document.getElementById('help-modal-close-btn');
+            const helpContentPomodoro = document.getElementById('help-content-pomodoro');
+            const helpContentAdaptativo = document.getElementById('help-content-adaptativo');
+            const resetConfirmModalOverlay = document.getElementById('reset-confirm-modal-overlay');
+            const resetConfirmBtn = document.getElementById('reset-confirm-btn');
+            const resetCancelBtn = document.getElementById('reset-cancel-btn');
+            // Inputs de Configurações
+            const focusDurationInput = document.getElementById('focus-duration');
+            const shortBreakDurationInput = document.getElementById('short-break-duration');
+            const longBreakDurationInput = document.getElementById('long-break-duration');
+            const longBreakIntervalInput = document.getElementById('long-break-interval');
+
+            // --- ESTADO DA APLICAÇÃO ---
+            let timer, isRunning = false, mode = 'focus', timeRemaining, totalTime;
+            let tasks = [], selectedTaskId = null, pomodoroSessionCount = 0;
+            let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
+            let focusMethod = 'pomodoro'; // 'pomodoro' ou 'adaptativo'
+
+            // --- FUNÇÕES DE GESTÃO DE MODO ---
+            const updateMethodToggleUI = () => {
+                const buttons = focusMethodToggle.querySelectorAll('.method-btn');
+                buttons.forEach(btn => {
+                    if (btn.dataset.method === focusMethod) {
+                        btn.classList.add('bg-blue-600', 'text-white');
+                        btn.classList.remove('text-gray-400');
+                    } else {
+                        btn.classList.remove('bg-blue-600', 'text-white');
+                        btn.classList.add('text-gray-400');
+                    }
+                });
+                pomodoroCyclesEl.style.display = focusMethod === 'pomodoro' ? 'flex' : 'none';
+                document.getElementById('new-task-estimate').labels[0].textContent = focusMethod === 'pomodoro' ? '#' : 'min';
+                helpContentPomodoro.style.display = focusMethod === 'pomodoro' ? 'block' : 'none';
+                helpContentAdaptativo.style.display = focusMethod === 'adaptativo' ? 'block' : 'none';
+                
+                if (!isRunning) {
+                    resetTimer('focus');
+                }
+            };
+
+            // --- FUNÇÕES DO TIMER ---
+            const showNotification = (title, body) => {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    const options = { body: body + (task ? `\nTarefa: ${task.name}` : ''), icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22><circle cx=%2212%22 cy=%2213%22 r=%229%22 fill=%22%23FF6347%22/><path d=%22M16 8c-2 2-4 2-6 0%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/><path d=%22M12 8V2l2 2%22 stroke=%22%23228B22%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/></svg>' };
+                    new Notification(title, options);
+                }
+            };
+
+            const showModal = (modalOverlay, message) => {
+                const messageEl = modalOverlay.querySelector('p');
+                if(messageEl && message) messageEl.textContent = message;
+                modalOverlay.classList.add('visible');
+            };
+
+            const hideModal = (modalOverlay) => {
+                modalOverlay.classList.remove('visible');
+            }
+
+            const startTimer = () => {
+                if (isRunning) return;
+                if (!selectedTaskId && mode === 'focus') {
+                    showModal(alertModalOverlay, 'Por favor, selecione uma tarefa para iniciar o foco.');
+                    return;
+                }
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+
+                if (focusMethod === 'adaptativo' && mode === 'focus' && timeRemaining <= 0) {
+                    timeRemaining = 0;
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    totalTime = (task ? task.pomodoroEstimate * 60 : settings.focusDuration * 60) || 1;
+                }
+
+                isRunning = true;
+                updateUI();
+                timer = setInterval(updateTimer, 1000);
+            };
+
+            const pauseTimer = () => {
+                if (!isRunning) return;
+                isRunning = false;
+                clearInterval(timer);
+                updateUI();
+            };
+            
+            const updateTimerDisplay = () => {
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                timerDisplay.textContent = display;
+                document.title = `${display} - Foco Total`;
+            
+                const circumference = 2 * Math.PI * 45;
+                let offset;
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    offset = circumference - (timeRemaining / totalTime) * circumference;
+                } else { // Adaptativo
+                    offset = (timeRemaining / totalTime) * circumference;
+                    if (offset > circumference) offset = circumference;
+                }
+                progressRing.style.strokeDasharray = circumference;
+                progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
+            };
+
+            const updateTimer = () => {
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    if (timeRemaining > 0) {
+                        timeRemaining--;
+                        if (isRunning && mode === 'focus') {
+                            const task = tasks.find(t => t.id === selectedTaskId);
+                            if (task) task.focusTime++;
+                        }
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timer);
+                        switchMode();
+                    }
+                } else { // Adaptativo
+                    timeRemaining++;
+                    if (isRunning && mode === 'focus') {
+                        const task = tasks.find(t => t.id === selectedTaskId);
+                        if (task) task.focusTime++;
+                    }
+                    updateTimerDisplay();
+                }
+            };
+
+            const switchMode = () => {
+                isRunning = false;
+                let notificationTitle = '', notificationBody = '';
+                if (mode === 'focus') {
+                    silentAudio.play().catch(e => console.log("Interação do usuário necessária para tocar áudio."));
+                    
+                    if (focusMethod === 'pomodoro') {
+                        pomodoroSessionCount++;
+                        const task = tasks.find(t => t.id === selectedTaskId);
+                        if(task) task.pomodorosCompleted++;
+                    }
+                    
+                    renderTasks();
+                    mode = (focusMethod === 'pomodoro' && pomodoroSessionCount % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
+                    notificationTitle = 'Foco Concluído!';
+                    notificationBody = mode === 'longBreak' ? 'Hora de uma pausa longa.' : 'Faça uma pausa curta.';
+                } else {
+                    silentAudio.pause();
+                    mode = 'focus';
+                    notificationTitle = 'Pausa Finalizada!';
+                    notificationBody = 'Vamos voltar ao foco.';
+                }
+                showNotification(notificationTitle, notificationBody);
+                resetTimer();
+            };
+
+            const resetTimer = (forceMode = null) => {
+                clearInterval(timer);
+                isRunning = false;
+                mode = forceMode || mode;
+
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
+                    totalTime = timeRemaining;
+                } else { // Adaptativo
+                    timeRemaining = 0;
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    totalTime = (task ? task.pomodoroEstimate * 60 : settings.focusDuration * 60) || 1;
+                }
+                updateUI();
+            };
+
+            const resetDay = () => {
+                pauseTimer();
+                tasks = [];
+                selectedTaskId = null;
+                pomodoroSessionCount = 0;
+                saveState();
+                renderTasks();
+                resetTimer('focus');
+                hideModal(resetConfirmModalOverlay);
+            };
+
+            const updateUI = () => {
+                updateTimerDisplay(); 
+                
+                let modeColor = mode === 'focus' ? 'blue' : 'green';
+            
+                progressRing.classList.remove('text-blue-500', 'text-green-500');
+                progressRing.classList.add(`text-${modeColor}-500`);
+
+                startPauseBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-green-600', 'hover:bg-green-700', 'bg-red-600', 'hover:bg-red-700');
+                
+                let btnIcon = '';
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    startPauseBtn.classList.add(`bg-${modeColor}-600`, `hover:bg-${modeColor}-700`);
+                    btnIcon = isRunning ? 'pause' : 'play';
+                } else { // Adaptativo
+                    if (isRunning) {
+                        startPauseBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                        // ALTERAÇÃO: Ícone 'stop-circle' trocado por 'square' para clareza.
+                        btnIcon = 'square'; 
+                    } else {
+                        startPauseBtn.classList.add(`bg-${modeColor}-600`, `hover:bg-${modeColor}-700`);
+                        btnIcon = 'play';
+                    }
+                }
+            
+                startPauseBtn.innerHTML = `<i data-lucide="${btnIcon}" class="w-8 h-8 ${btnIcon === 'play' ? 'pl-1' : ''}"></i>`;
+            
+                lucide.createIcons();
+            };
+
+            const formatTime = (totalSeconds) => {
+                if (!totalSeconds || totalSeconds < 1) return `0m`;
+                const minutes = Math.floor(totalSeconds / 60);
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                if (hours > 0) return `${hours}h ${remainingMinutes}m`;
+                return `${minutes}m`;
+            };
+
+            const updateStatsDisplay = () => {
+                if (tasks.length === 0) {
+                    statsContentEl.innerHTML = '<p class="text-gray-400 text-center">Nenhuma tarefa para exibir.</p>';
+                    return;
+                }
+                let statsHTML = '<div class="space-y-3">';
+                const sortedTasks = [...tasks].sort((a, b) => a.completed - b.completed);
+
+                sortedTasks.forEach(task => {
+                    statsHTML += `
+                        <div class="bg-gray-900 p-3 rounded-lg ${task.completed ? 'opacity-60' : ''}">
+                            <p class="font-bold text-white truncate ${task.completed ? 'line-through' : ''}">${task.name}</p>
+                            <div class="grid grid-cols-4 gap-2 mt-2 text-center text-sm">
+                                <div>
+                                    <p class="text-xs text-gray-400">Foco</p>
+                                    <p class="font-semibold">${formatTime(task.focusTime)}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-400">Ciclos</p>
+                                    <p class="font-semibold">${task.pomodorosCompleted}/${task.pomodoroEstimate}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-400">Int. Interna</p>
+                                    <p class="font-semibold">${task.internalInterruptions}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-400">Int. Externa</p>
+                                    <p class="font-semibold">${task.externalInterruptions}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                statsHTML += '</div>';
+                statsContentEl.innerHTML = statsHTML;
+            };
+            
+            // --- FUNÇÕES DE GESTÃO DE TAREFAS ---
+            const renderTasks = () => {
+                const visibleTasks = tasks.filter(task => !task.completed);
+                
+                taskListEl.innerHTML = visibleTasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione a sua primeira tarefa!</p>' : '';
+                
+                visibleTasks.forEach(task => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `task-item bg-gray-900 p-3 rounded-lg border-2 border-transparent cursor-pointer ${task.id === selectedTaskId ? 'selected' : ''}`;
+                    taskEl.dataset.id = task.id;
+                    
+                    const isEditing = task.isEditing;
+                    const estimateLabel = focusMethod === 'pomodoro' ? 'Pomodoros' : 'Estimativa';
+                    const iconEstimate = focusMethod === 'pomodoro' ? 'check-circle-2' : 'target';
+                    const colorEstimate = focusMethod === 'pomodoro' ? 'green' : 'yellow';
+
+                    taskEl.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center min-w-0 flex-grow">
+                                <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-3 flex-shrink-0"><i data-lucide="square" class="w-5 h-5"></i></button>
+                                ${isEditing 
+                                    ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none" data-edit-input-id="${task.id}">`
+                                    : `<span class="task-name truncate text-sm">${task.name}</span>`
+                                }
+                            </div>
+                            <div class="flex items-center space-x-1 flex-shrink-0">
+                                <button data-edit-id="${task.id}" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md"><i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i></button>
+                                <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-1 rounded-md"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-1 items-center mt-2 pl-8 text-xs text-center">
+                            <span class="text-gray-400 font-bold flex items-center justify-center" title="${estimateLabel}">
+                                <i data-lucide="${iconEstimate}" class="w-4 h-4 mr-1 text-${colorEstimate}-500"></i>
+                                ${focusMethod === 'pomodoro' ? `${task.pomodorosCompleted}/` : ''}${task.pomodoroEstimate}${focusMethod === 'adaptativo' ? 'm' : ''}
+                            </span>
+                            <span class="text-gray-400 font-bold flex items-center justify-center" title="Tempo de Foco Total">
+                                <i data-lucide="clock" class="w-4 h-4 mr-1 text-blue-400"></i>
+                                ${formatTime(task.focusTime)}
+                            </span>
+                            <span class="text-gray-400 font-bold flex items-center justify-center" title="Interrupções Internas">
+                                <i data-lucide="zap-off" class="w-4 h-4 mr-1 text-gray-400"></i>
+                                ${task.internalInterruptions}
+                            </span>
+                            <span class="text-gray-400 font-bold flex items-center justify-center" title="Interrupções Externas">
+                                <i data-lucide="user-x" class="w-4 h-4 mr-1 text-gray-400"></i>
+                                ${task.externalInterruptions}
+                            </span>
+                        </div>`;
+                    
+                    taskListEl.appendChild(taskEl);
+                });
+
+                updateCurrentTaskDisplay();
+                updateStatsDisplay();
+                saveState();
+                lucide.createIcons();
+            };
+
+            const addTask = () => {
+                const taskName = newTaskInput.value.trim();
+                const estimate = parseInt(newTaskEstimateInput.value) || (focusMethod === 'pomodoro' ? 1 : 25);
+                if (taskName) {
+                    const newTask = { 
+                        id: Date.now(), 
+                        name: taskName, 
+                        pomodoroEstimate: estimate, 
+                        pomodorosCompleted: 0, 
+                        internalInterruptions: 0, 
+                        externalInterruptions: 0, 
+                        focusTime: 0, 
+                        completed: false,
+                        isEditing: false
+                    };
+                    tasks.push(newTask);
+                    newTaskInput.value = '';
+                    newTaskEstimateInput.value = (focusMethod === 'pomodoro' ? '1' : '25');
+                    renderTasks();
+                    if (!selectedTaskId || tasks.find(t => t.id === selectedTaskId)?.completed) {
+                        selectTask(newTask.id);
+                    }
+                }
+            };
+
+            const deleteTask = (id) => {
+                tasks = tasks.filter(task => task.id !== id);
+                if (selectedTaskId === id) {
+                    const firstIncompleteTask = tasks.find(t => !t.completed);
+                    selectedTaskId = firstIncompleteTask ? firstIncompleteTask.id : null;
+                    if (!isRunning) resetTimer('focus');
+                }
+                renderTasks();
+            };
+
+            const toggleTaskCompleted = (id) => {
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    task.completed = true;
+                    if (task.completed && selectedTaskId === id) {
+                        if(isRunning && mode === 'focus') pauseTimer();
+                        const firstIncompleteTask = tasks.find(t => !t.completed);
+                        selectTask(firstIncompleteTask ? firstIncompleteTask.id : null);
+                    }
+                    renderTasks();
+                }
+            };
+            
+            const toggleEditState = (id) => {
+                tasks.forEach(task => {
+                    task.isEditing = task.id === id ? !task.isEditing : false;
+                });
+                renderTasks();
+                const input = document.querySelector(`[data-edit-input-id="${id}"]`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            };
+
+            const updateTaskName = (id, newName) => {
+                const task = tasks.find(t => t.id === id);
+                if (task) {
+                    if (newName) {
+                        task.name = newName;
+                    }
+                    task.isEditing = false;
+                    renderTasks();
+                }
+            };
+
+            const selectTask = (id) => {
+                const task = tasks.find(t => t.id === id);
+                const isAnyTaskEditing = tasks.some(t => t.isEditing);
+
+                if (task && !isAnyTaskEditing) {
+                    selectedTaskId = id;
+                    if (!isRunning) {
+                        resetTimer('focus');
+                    } else {
+                        renderTasks();
+                    }
+                }
+            };
+
+            const logInterruption = (type) => {
+                if (isRunning && mode === 'focus' && selectedTaskId) {
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    if (task) {
+                        if (type === 'internal') task.internalInterruptions++;
+                        else if (type === 'external') task.externalInterruptions++;
+                        renderTasks();
+                    }
+                } else {
+                    showModal(alertModalOverlay, 'Só pode registrar uma interrupção durante um ciclo de foco ativo.');
+                }
+            };
+            
+            const updateCurrentTaskDisplay = () => {
+                const task = tasks.find(t => t.id === selectedTaskId);
+                currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
+                pomodoroCyclesEl.innerHTML = '';
+                if (focusMethod !== 'pomodoro' || !settings.longBreakInterval || settings.longBreakInterval <= 0) return;
+                const cyclesToShow = pomodoroSessionCount % settings.longBreakInterval;
+                for(let i = 0; i < settings.longBreakInterval; i++) {
+                    const icon = i < cyclesToShow ? '<i data-lucide="check-circle-2" class="text-green-500"></i>' : '<i data-lucide="circle" class="text-gray-600"></i>';
+                    pomodoroCyclesEl.innerHTML += `<span class="transition-all">${icon}</span>`;
+                }
+                lucide.createIcons();
+            };
+
+            const saveState = () => {
+                localStorage.setItem('pomodoroCoreState', JSON.stringify({ settings, tasks, selectedTaskId, pomodoroSessionCount, focusMethod }));
+            };
+
+            const loadState = () => {
+                const state = JSON.parse(localStorage.getItem('pomodoroCoreState'));
+                if (state) {
+                    settings = { ...settings, ...state.settings };
+                    tasks = state.tasks || [];
+                    selectedTaskId = state.selectedTaskId;
+                    pomodoroSessionCount = state.pomodoroSessionCount || 0;
+                    focusMethod = state.focusMethod || 'pomodoro';
+                }
+                
+                tasks.forEach(t => {
+                    if (t.isEditing === undefined) t.isEditing = false;
+                    if (t.internalInterruptions === undefined) {
+                        t.internalInterruptions = 0;
+                        t.externalInterruptions = t.interruptions || 0;
+                        delete t.interruptions;
+                    }
+                });
+
+                focusDurationInput.value = settings.focusDuration;
+                shortBreakDurationInput.value = settings.shortBreakDuration;
+                longBreakDurationInput.value = settings.longBreakDuration;
+                longBreakIntervalInput.value = settings.longBreakInterval;
+
+                if (selectedTaskId) {
+                    const task = tasks.find(t => t.id === selectedTaskId);
+                    if (!task || task.completed) selectedTaskId = null;
+                }
+                if (!selectedTaskId) {
+                    const firstIncompleteTask = tasks.find(t => !t.completed);
+                    if (firstIncompleteTask) selectedTaskId = firstIncompleteTask.id;
+                }
+            };
+            
+            // --- EVENT LISTENERS ---
+            startPauseBtn.addEventListener('click', () => {
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    isRunning ? pauseTimer() : startTimer();
+                } else { // Adaptativo
+                    if (isRunning) {
+                        pauseTimer();
+                        showModal(sessionEndModalOverlay, `Você se concentrou por ${formatTime(timeRemaining)}.`);
+                        resetTimer('focus');
+                    } else {
+                        startTimer();
+                    }
+                }
+            });
+            resetBtn.addEventListener('click', () => showModal(resetConfirmModalOverlay));
+            resetConfirmBtn.addEventListener('click', resetDay);
+            resetCancelBtn.addEventListener('click', () => hideModal(resetConfirmModalOverlay));
+            internalInterruptBtn.addEventListener('click', () => logInterruption('internal'));
+            externalInterruptBtn.addEventListener('click', () => logInterruption('external'));
+            settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
+            statsBtn.addEventListener('click', () => showModal(statsModalOverlay));
+            helpBtn.addEventListener('click', () => showModal(helpModalOverlay));
+            statsModalCloseBtn.addEventListener('click', () => hideModal(statsModalOverlay));
+            helpModalCloseBtn.addEventListener('click', () => hideModal(helpModalOverlay));
+            alertModalCloseBtn.addEventListener('click', () => hideModal(alertModalOverlay));
+            sessionEndCloseBtn.addEventListener('click', () => hideModal(sessionEndModalOverlay));
+            settingsSaveBtn.addEventListener('click', () => {
+                settings.focusDuration = parseInt(focusDurationInput.value) || 25;
+                settings.shortBreakDuration = parseInt(shortBreakDurationInput.value) || 5;
+                settings.longBreakDuration = parseInt(longBreakDurationInput.value) || 15;
+                settings.longBreakInterval = parseInt(longBreakIntervalInput.value) || 4;
+                saveState();
+                hideModal(settingsModalOverlay);
+                if (!isRunning) resetTimer('focus');
+            });
+            addTaskBtn.addEventListener('click', addTask);
+            newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
+            focusMethodToggle.addEventListener('click', (e) => {
+                const target = e.target.closest('.method-btn');
+                if (target && !isRunning) {
+                    focusMethod = target.dataset.method;
+                    updateMethodToggleUI();
+                    renderTasks();
+                    saveState();
+                } else if (isRunning) {
+                    showModal(alertModalOverlay, 'Não é possível trocar de modo enquanto o timer está rodando.');
+                }
+            });
+
+            [alertModalOverlay, settingsModalOverlay, statsModalOverlay, helpModalOverlay, resetConfirmModalOverlay, sessionEndModalOverlay].forEach(overlay => {
+                overlay.addEventListener('click', (e) => { if (e.target === overlay) hideModal(overlay); });
+            });
+            
+            taskListEl.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.delete-btn');
+                const completeBtn = e.target.closest('.complete-btn');
+                const editBtn = e.target.closest('.edit-btn');
+                const taskItem = e.target.closest('.task-item');
+
+                if (deleteBtn) { deleteTask(parseInt(deleteBtn.dataset.deleteId)); return; }
+                if (completeBtn) { toggleTaskCompleted(parseInt(completeBtn.dataset.completeId)); return; }
+                if (editBtn) {
+                    const id = parseInt(editBtn.dataset.editId);
+                    const task = tasks.find(t => t.id === id);
+                    if (task && task.isEditing) {
+                        const input = taskListEl.querySelector(`[data-edit-input-id="${id}"]`);
+                        if (input) updateTaskName(id, input.value.trim());
+                    } else {
+                        toggleEditState(id);
+                    }
+                    return;
+                }
+
+                if (taskItem) { selectTask(parseInt(taskItem.dataset.id)); }
+            });
+
+            taskListEl.addEventListener('keyup', (e) => {
+                if (e.target.matches('.task-edit-input')) {
+                    const id = parseInt(e.target.dataset.editInputId);
+                    if (e.key === 'Enter') {
+                        updateTaskName(id, e.target.value.trim());
+                    } else if (e.key === 'Escape') {
+                        toggleEditState(null);
+                    }
+                }
+            });
+
+            taskListEl.addEventListener('focusout', (e) => {
+                if (e.target.matches('.task-edit-input')) {
+                    const id = parseInt(e.target.dataset.editInputId);
+                    setTimeout(() => {
+                        const task = tasks.find(t => t.id === id);
+                        if (task && task.isEditing) {
+                           updateTaskName(id, e.target.value.trim());
+                        }
+                    }, 150);
+                }
+            });
+
+            // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+            loadState();
+            renderTasks();
+            updateMethodToggleUI();
+            lucide.createIcons();
+            if ('Notification' in window && Notification.permission === 'default') {}
+        });
+    </script>
 </body>
 </html>
-
