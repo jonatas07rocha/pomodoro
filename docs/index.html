@@ -134,6 +134,58 @@
             z-index: 2000;
             box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
         }
+
+        /* Estilos para o interruptor de notificações */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4B5563;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2563EB;
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2563EB;
+        }
+        input:checked + .slider:before {
+            -webkit-transform: translateX(22px);
+            -ms-transform: translateX(22px);
+            transform: translateX(22px);
+        }
+        input:disabled + .slider {
+            cursor: not-allowed;
+            background-color: #374151;
+        }
     </style>
 </head>
 <body>
@@ -259,13 +311,16 @@
                     <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
                </div>
             </div>
-            <!-- NOVA SEÇÃO DE NOTIFICAÇÕES -->
+            <!-- SEÇÃO DE NOTIFICAÇÕES REFEITA COM INTERRUPTOR -->
             <div class="mb-4">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Notificações</h3>
-                <div id="notification-status" class="text-sm text-gray-400 mb-2 text-center"></div>
-                <button id="enable-notifications-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-colors text-sm">
-                    Ativar Notificações
-                </button>
+                <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                    <span id="notification-status" class="text-sm text-gray-300"></span>
+                    <label class="switch">
+                        <input type="checkbox" id="notification-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
             <button id="settings-save-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl mt-6 transition-colors text-sm">
                 Salvar e Fechar
@@ -388,7 +443,7 @@
             const installBtn = document.getElementById('install-btn');
             const installDismissBtn = document.getElementById('install-dismiss-btn');
             // Notificações
-            const enableNotificationsBtn = document.getElementById('enable-notifications-btn');
+            const notificationToggle = document.getElementById('notification-toggle');
             const notificationStatus = document.getElementById('notification-status');
 
 
@@ -450,75 +505,89 @@
                 return outputArray;
             };
             
-            const updateNotificationUI = () => {
-                console.log("DEBUG: Executando updateNotificationUI...");
+            async function updateNotificationUI() {
                 if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-                    console.error("DEBUG: Navegador não suporta notificações, service worker ou push manager.");
-                    notificationStatus.textContent = 'Notificações não suportadas.';
-                    enableNotificationsBtn.disabled = true;
+                    notificationStatus.textContent = 'Notificações não suportadas';
+                    notificationToggle.disabled = true;
                     return;
                 }
 
-                console.log("DEBUG: Permissão de notificação atual: ", Notification.permission);
+                const permission = Notification.permission;
+                if (permission === 'denied') {
+                    notificationStatus.textContent = 'Permissão bloqueada';
+                    notificationToggle.checked = false;
+                    notificationToggle.disabled = true;
+                    return;
+                }
 
-                if (Notification.permission === 'denied') {
-                    notificationStatus.textContent = 'Permissão bloqueada.';
-                    enableNotificationsBtn.disabled = true;
-                    enableNotificationsBtn.textContent = 'Notificações Bloqueadas';
-                } else if (Notification.permission === 'granted') {
-                     navigator.serviceWorker.ready.then(reg => {
-                        reg.pushManager.getSubscription().then(sub => {
-                            if (sub) {
-                                notificationStatus.textContent = 'Notificações ativadas.';
-                                enableNotificationsBtn.disabled = true;
-                                enableNotificationsBtn.textContent = 'Notificações Ativadas';
-                            } else {
-                                notificationStatus.textContent = 'Clique para ativar.';
-                                enableNotificationsBtn.disabled = false;
-                                enableNotificationsBtn.textContent = 'Ativar Notificações';
-                            }
-                        });
-                    });
+                notificationToggle.disabled = false;
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+
+                if (subscription) {
+                    notificationStatus.textContent = 'Notificações ativadas';
+                    notificationToggle.checked = true;
                 } else {
-                    notificationStatus.textContent = 'Notificações não ativadas.';
-                    enableNotificationsBtn.disabled = false;
-                    enableNotificationsBtn.textContent = 'Ativar Notificações';
+                    notificationStatus.textContent = 'Notificações desativadas';
+                    notificationToggle.checked = false;
                 }
-            };
+            }
 
-            const subscribeUserToPush = () => {
-                console.log("DEBUG: Executando subscribeUserToPush...");
-                if (VAPID_PUBLIC_KEY === 'SUA_CHAVE_VAPID_PUBLICA_AQUI') {
-                    console.error('ERRO: Chave VAPID pública não foi definida.');
-                    showModal(alertModalOverlay, 'Erro de configuração: A chave de notificação não foi definida pelo desenvolvedor.');
-                    return;
-                }
-                navigator.serviceWorker.ready.then(registration => {
-                    const subscribeOptions = {
+            async function subscribeUserToPush() {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                    };
-                    return registration.pushManager.subscribe(subscribeOptions);
-                })
-                .then(pushSubscription => {
-                    console.log('DEBUG: Recebida a PushSubscription: ', JSON.stringify(pushSubscription));
-                    sendSubscriptionToServer(pushSubscription);
+                    });
+                    
+                    console.log('Inscrição Push recebida: ', JSON.stringify(subscription));
+                    await sendSubscriptionToServer(subscription);
+                    showModal(alertModalOverlay, 'Notificações ativadas com sucesso!');
                     updateNotificationUI();
-                    return pushSubscription;
-                })
-                .catch(err => {
-                    console.error('DEBUG: Falha ao inscrever o usuário: ', err);
-                    if (Notification.permission === 'denied') {
-                        showModal(alertModalOverlay, 'Você bloqueou as notificações. Para ativá-las, mude as permissões para este site nas configurações do seu navegador.');
+                } catch (err) {
+                    console.error('Falha ao inscrever o utilizador: ', err);
+                    showModal(alertModalOverlay, 'Falha ao ativar notificações. Por favor, tente novamente.');
+                    updateNotificationUI(); // Reverte o estado do UI se a inscrição falhar
+                }
+            }
+
+            async function unsubscribeUser() {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.getSubscription();
+                    if (subscription) {
+                        await subscription.unsubscribe();
+                        console.log('Inscrição cancelada com sucesso.');
+                        // TODO: Enviar pedido ao backend para remover a inscrição
+                        updateNotificationUI();
                     }
-                    updateNotificationUI();
-                });
-            };
+                } catch (err) {
+                    console.error('Erro ao cancelar a inscrição: ', err);
+                }
+            }
+
+            async function handleNotificationToggleChange() {
+                if (this.checked) {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        await subscribeUserToPush();
+                    } else {
+                        showModal(alertModalOverlay, 'Permissão para notificações foi negada.');
+                        this.checked = false; // Desfaz a ação do utilizador se a permissão for negada
+                    }
+                } else {
+                    await unsubscribeUser();
+                }
+                updateNotificationUI();
+            }
 
             const sendSubscriptionToServer = (subscription) => {
-                console.log('DEBUG: TODO: Enviar inscrição para o servidor.');
-                showModal(alertModalOverlay, 'Notificações ativadas com sucesso!');
+                console.log('TODO: Enviar inscrição para o servidor.');
+                // Exemplo:
+                // fetch('/api/subscribe', { method: 'POST', ... });
             };
+
 
             // --- FUNÇÕES DE GESTÃO DE MODO ---
             const updateMethodToggleUI = () => {
@@ -1079,26 +1148,7 @@
             });
 
             // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-            console.log("DEBUG: Adicionando listener de clique ao botão de notificações.");
-            enableNotificationsBtn.addEventListener('click', () => {
-                console.log("DEBUG: Botão 'Ativar Notificações' clicado.");
-                if (Notification.permission === 'default') {
-                    console.log("DEBUG: Permissão atual: default. Solicitando permissão...");
-                    Notification.requestPermission().then(permission => {
-                        console.log("DEBUG: Usuário respondeu à solicitação. Permissão: ", permission);
-                        if (permission === 'granted') {
-                            console.log("DEBUG: Permissão concedida. Tentando inscrever...");
-                            subscribeUserToPush();
-                        }
-                        updateNotificationUI();
-                    });
-                } else if (Notification.permission === 'granted') {
-                    console.log("DEBUG: Permissão já concedida. Tentando inscrever...");
-                    subscribeUserToPush();
-                } else {
-                    console.log("DEBUG: Permissão não é 'default' nem 'granted'. Estado atual: ", Notification.permission);
-                }
-            });
+            notificationToggle.addEventListener('change', handleNotificationToggleChange);
 
             loadState();
             updateMethodToggleUI();
