@@ -1,12 +1,11 @@
 const CACHE_NAME = 'foco-total-core-v1.5'; // Versão incrementada para forçar a atualização
 
+// URLs de CDN removidas desta lista para evitar erros de CORS na instalação.
+// Elas serão cacheadas dinamicamente pelo evento 'fetch'.
 const urlsToCache = [
-    './', // CORRIGIDO: Garante que a raiz do app seja cacheada corretamente
+    './',
     'index.html',
     'manifest.json',
-    'https://cdn.tailwindcss.com',
-    'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap',
-    'https://unpkg.com/lucide@latest/dist/umd/lucide.js',
     'icon-180x180.png',
     'icon-192x192.png',
     'icon-512x512.png'
@@ -43,20 +42,26 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
+                // Se o recurso estiver no cache, retorna ele.
                 if (response) {
                     return response;
                 }
+                // Se não, busca na rede.
                 return fetch(event.request).then(
                     networkResponse => {
-                        // Apenas cacheia respostas válidas e de origens esperadas
+                        // Apenas cacheia respostas válidas.
                         if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
                             return networkResponse;
                         }
+                        
+                        // Clona a resposta para poder enviá-la ao navegador e ao cache.
                         const responseToCache = networkResponse.clone();
+                        
                         caches.open(CACHE_NAME)
                             .then(cache => {
                                 cache.put(event.request, responseToCache);
                             });
+                            
                         return networkResponse;
                     }
                 );
@@ -64,6 +69,7 @@ self.addEventListener('fetch', event => {
     );
 });
 
+// Listener para receber a notificação push do servidor.
 self.addEventListener('push', event => {
     const data = event.data ? event.data.json() : {};
     const title = data.title || 'Foco Total';
@@ -78,6 +84,7 @@ self.addEventListener('push', event => {
     );
 });
 
+// Listener para quando o usuário clica na notificação.
 self.addEventListener('notificationclick', event => {
     event.notification.close();
     event.waitUntil(
