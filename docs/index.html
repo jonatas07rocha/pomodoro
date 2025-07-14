@@ -26,7 +26,7 @@
             display: none;
         }
         html {
-           scrollbar-width: none; /* Para Firefox */
+            scrollbar-width: none; /* Para Firefox */
         }
 
         body {
@@ -493,7 +493,7 @@
                  installBanner.style.display = 'none';
             }
 
-            // --- LÓGICA DE NOTIFICAÇÕES PUSH (REFEITA) ---
+            // --- LÓGICA DE NOTIFICAÇÕES PUSH (FINAL) ---
             const urlBase64ToUint8Array = (base64String) => {
                 const padding = '='.repeat((4 - base64String.length % 4) % 4);
                 const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -529,6 +529,8 @@
                     if (subscription) {
                         notificationStatus.textContent = 'Notificações Ativadas';
                         notificationToggle.checked = true;
+                        // Garante que a inscrição está salva localmente
+                        saveSubscriptionLocally(subscription);
                     } else {
                         notificationStatus.textContent = 'Notificações Desativadas';
                         notificationToggle.checked = false;
@@ -549,7 +551,7 @@
                     });
                     
                     console.log('Inscrição Push recebida: ', JSON.stringify(subscription));
-                    await sendSubscriptionToServer(subscription);
+                    saveSubscriptionLocally(subscription);
                 } catch (err) {
                     console.error('Falha ao inscrever o utilizador: ', err);
                     showModal(alertModalOverlay, 'Falha ao ativar notificações. Por favor, tente novamente.');
@@ -564,7 +566,8 @@
                     if (subscription) {
                         await subscription.unsubscribe();
                         console.log('Inscrição cancelada com sucesso.');
-                        // TODO: Enviar pedido ao backend para remover a inscrição
+                        // Remove a inscrição do armazenamento local
+                        localStorage.removeItem('pushSubscription');
                     }
                 } catch (err) {
                     console.error('Erro ao cancelar a inscrição: ', err);
@@ -588,11 +591,41 @@
                 await updateNotificationUI();
             }
 
-            const sendSubscriptionToServer = (subscription) => {
-                console.log('TODO: Enviar inscrição para o servidor.');
-                // Exemplo:
-                // fetch('/api/subscribe', { method: 'POST', ... });
+            // MODIFICADO: Salva a inscrição no localStorage para uso posterior
+            const saveSubscriptionLocally = (subscription) => {
+                localStorage.setItem('pushSubscription', JSON.stringify(subscription));
+                console.log('Inscrição salva localmente.');
             };
+
+            // NOVO: Função para chamar o backend e disparar a notificação
+            async function triggerPushNotification() {
+                const subscriptionString = localStorage.getItem('pushSubscription');
+                if (!subscriptionString) {
+                    console.log('Nenhuma inscrição encontrada para enviar notificação.');
+                    return;
+                }
+
+                const subscription = JSON.parse(subscriptionString);
+
+                try {
+                    const response = await fetch('/api/enviar-notificacao', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ subscription: subscription }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Falha na resposta do servidor ao enviar notificação.');
+                    }
+
+                    const data = await response.json();
+                    console.log('Resposta do servidor de notificação:', data);
+                } catch (error) {
+                    console.error('Erro ao tentar disparar a notificação push:', error);
+                }
+            }
 
 
             // --- FUNÇÕES DE GESTÃO DE MODO ---
@@ -689,6 +722,11 @@
 
             const switchMode = () => {
                 isRunning = false;
+                
+                // MODIFICADO: Dispara a notificação push ao final de uma sessão
+                if (mode === 'focus' && focusMethod === 'pomodoro') {
+                    triggerPushNotification();
+                }
                 
                 if (mode === 'focus') {
                     if (focusMethod === 'pomodoro') {
