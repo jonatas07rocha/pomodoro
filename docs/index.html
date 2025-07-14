@@ -529,7 +529,6 @@
                     if (subscription) {
                         notificationStatus.textContent = 'Notificações Ativadas';
                         notificationToggle.checked = true;
-                        // Garante que a inscrição está salva localmente
                         saveSubscriptionLocally(subscription);
                     } else {
                         notificationStatus.textContent = 'Notificações Desativadas';
@@ -555,7 +554,7 @@
                 } catch (err) {
                     console.error('Falha ao inscrever o utilizador: ', err);
                     showModal(alertModalOverlay, 'Falha ao ativar notificações. Por favor, tente novamente.');
-                    updateNotificationUI(); // Reverte o estado do UI se a inscrição falhar
+                    updateNotificationUI(); 
                 }
             }
 
@@ -566,7 +565,6 @@
                     if (subscription) {
                         await subscription.unsubscribe();
                         console.log('Inscrição cancelada com sucesso.');
-                        // Remove a inscrição do armazenamento local
                         localStorage.removeItem('pushSubscription');
                     }
                 } catch (err) {
@@ -575,7 +573,7 @@
             }
 
             async function handleNotificationToggleChange() {
-                notificationToggle.disabled = true; // Desativa o interruptor durante o processamento
+                notificationToggle.disabled = true; 
 
                 if (this.checked) {
                     const permission = await Notification.requestPermission();
@@ -587,27 +585,25 @@
                 } else {
                     await unsubscribeUser();
                 }
-                // Atualiza sempre a UI no final para refletir o estado real
                 await updateNotificationUI();
             }
 
-            // MODIFICADO: Salva a inscrição no localStorage para uso posterior
             const saveSubscriptionLocally = (subscription) => {
                 localStorage.setItem('pushSubscription', JSON.stringify(subscription));
                 console.log('Inscrição salva localmente.');
             };
 
-            // NOVO: Função para chamar o backend e disparar a notificação
             async function triggerPushNotification() {
                 const subscriptionString = localStorage.getItem('pushSubscription');
                 if (!subscriptionString) {
-                    console.log('Nenhuma inscrição encontrada para enviar notificação.');
+                    console.log('Nenhuma inscrição encontrada para enviar notificação PUSH.');
                     return;
                 }
 
                 const subscription = JSON.parse(subscriptionString);
 
                 try {
+                    console.log('Tentando enviar notificação PUSH para o backend...');
                     const response = await fetch('/api/enviar-notificacao', {
                         method: 'POST',
                         headers: {
@@ -720,14 +716,37 @@
                 }
             };
 
+            // ############# LÓGICA CENTRAL CORRIGIDA #############
             const switchMode = () => {
                 isRunning = false;
-                
-                // MODIFICADO: Dispara a notificação push ao final de uma sessão
+
+                // --- BLOCO DE NOTIFICAÇÃO CORRIGIDO E MELHORADO ---
+                // Este bloco é executado sempre que um ciclo termina.
                 if (mode === 'focus' && focusMethod === 'pomodoro') {
+                    // 1. Tenta enviar uma notificação PUSH (para Desktop/Android com app fechado)
                     triggerPushNotification();
+
+                    // 2. Mostra uma notificação LOCAL (para iOS e como fallback/alerta imediato)
+                    // Isso garante que o usuário veja algo mesmo com a aba aberta.
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        try {
+                            const notificationBody = (pomodoroSessionCount + 1) % settings.longBreakInterval === 0
+                                ? `Ótimo trabalho! Hora de uma pausa longa.`
+                                : `Sessão finalizada! Hora de uma pausa curta.`;
+
+                            new Notification('Foco Total ⏰', {
+                                body: notificationBody,
+                                icon: 'icon-192x192.png',
+                                tag: 'foco-total-session-end' // Evita notificações duplicadas
+                            });
+                        } catch (e) {
+                            console.error("Erro ao criar notificação local:", e);
+                        }
+                    }
                 }
-                
+                // --- FIM DO BLOCO DE NOTIFICAÇÃO ---
+
+                // O resto da lógica para trocar de modo continua igual
                 if (mode === 'focus') {
                     if (focusMethod === 'pomodoro') {
                         pomodoroSessionCount++;
@@ -883,7 +902,7 @@
                             <div class="flex items-center min-w-0 flex-grow">
                                 <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-3 flex-shrink-0"><i data-lucide="square" class="w-5 h-5"></i></button>
                                 ${isEditing 
-                                    ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none" data-edit-input-id="${task.id}">`
+                                    ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none" data-edit-input-id="${id}">`
                                     : `<span class="task-name truncate text-sm">${task.name}</span>`
                                 }
                             </div>
