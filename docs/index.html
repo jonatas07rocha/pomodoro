@@ -179,7 +179,6 @@
                 <!-- FORMULÁRIO DE ADIÇÃO DE TAREFA -->
                 <div class="flex mt-3 space-x-2 items-center bg-gray-900 p-2 rounded-lg">
                     <input type="text" id="new-task-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
-                    <!-- AJUSTE: Este container será escondido no modo adaptativo -->
                     <div id="task-estimate-container" class="flex items-center">
                         <label for="new-task-estimate" class="text-sm text-gray-400 mr-1 font-bold">#</label>
                         <input type="number" id="new-task-estimate" class="w-12 bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="1" min="1">
@@ -394,12 +393,11 @@
 
 
             // --- ESTADO DA APLICAÇÃO ---
-            let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime, startTime;
-            // AJUSTE: 'tasks' agora é um objeto para separar as listas por modo
+            let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime, startTime, endTime;
             let tasks = { pomodoro: [], adaptativo: [] };
             let selectedTaskId = null, pomodoroSessionCount = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
-            let focusMethod = 'pomodoro'; // 'pomodoro' ou 'adaptativo'
+            let focusMethod = 'pomodoro';
             let deferredInstallPrompt = null;
             const VAPID_PUBLIC_KEY = 'SUA_CHAVE_VAPID_PUBLICA_AQUI';
 
@@ -538,7 +536,6 @@
                     btn.classList.toggle('text-gray-400', btn.dataset.method !== focusMethod);
                 });
                 
-                // AJUSTE: Mostra/esconde elementos com base no modo
                 const isPomodoro = focusMethod === 'pomodoro';
                 pomodoroCyclesEl.style.display = isPomodoro ? 'flex' : 'none';
                 taskEstimateContainer.style.display = isPomodoro ? 'flex' : 'none';
@@ -548,7 +545,7 @@
                 if (!isRunning) {
                     resetTimer('focus');
                 }
-                renderTasks(); // Re-renderiza as tarefas para o modo correto
+                renderTasks(); 
             };
 
             // --- FUNÇÕES DO TIMER ---
@@ -571,7 +568,12 @@
                 }
 
                 isRunning = true;
-                startTime = Date.now() - (timeRemaining * 1000); // Garante que continue de onde parou
+                
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    endTime = Date.now() + timeRemaining * 1000;
+                } else {
+                    startTime = Date.now() - timeRemaining * 1000;
+                }
                 
                 updateUI();
                 timerInterval = setInterval(updateTimer, 1000);
@@ -593,18 +595,16 @@
                 document.title = `${display} - Foco Total`;
             
                 const circumference = 2 * Math.PI * 45;
-                let offset = circumference; // Padrão para anel vazio
+                let offset = circumference; 
                 if (focusMethod === 'pomodoro') {
                     offset = circumference - (timeRemaining / totalTime) * circumference;
                 }
-                // No modo adaptativo, o anel não progride
                 progressRing.style.strokeDasharray = circumference;
-                progressRing.style.strokeDashoffset = isNaN(offset) ? circumference : offset;
+                progressRing.style.strokeDashoffset = isNaN(offset) || offset < 0 ? circumference : offset;
             };
 
             const updateTimer = () => {
                 if (focusMethod === 'pomodoro' || mode !== 'focus') {
-                    const endTime = startTime + totalTime * 1000;
                     const remaining = Math.round((endTime - Date.now()) / 1000);
                     if (remaining >= 0) {
                         timeRemaining = remaining;
@@ -613,7 +613,7 @@
                         clearInterval(timerInterval);
                         switchMode();
                     }
-                } else { // Modo Adaptativo (cronômetro)
+                } else { 
                     timeRemaining = Math.floor((Date.now() - startTime) / 1000);
                     updateTimerDisplay();
                 }
@@ -647,7 +647,7 @@
                 if (focusMethod === 'pomodoro' || mode !== 'focus') {
                     timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
                     totalTime = timeRemaining;
-                } else { // Modo Adaptativo
+                } else {
                     timeRemaining = 0;
                     totalTime = 0;
                 }
@@ -657,7 +657,7 @@
 
             const resetDay = () => {
                 pauseTimer();
-                tasks[focusMethod] = []; // Limpa apenas a lista do modo atual
+                tasks[focusMethod] = []; 
                 selectedTaskId = null;
                 if (focusMethod === 'pomodoro') {
                     pomodoroSessionCount = 0;
@@ -752,7 +752,6 @@
                     
                     const isEditing = task.isEditing;
                     
-                    // AJUSTE: O HTML da tarefa agora é condicional ao modo
                     const pomodoroDetails = `
                         <span class="text-gray-400 font-bold flex items-center justify-center" title="Pomodoros">
                             <i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>
@@ -810,7 +809,7 @@
                 const newTask = { 
                     id: Date.now(), 
                     name: taskName, 
-                    pomodoroEstimate: focusMethod === 'pomodoro' ? estimate : 0, // Sem estimativa para adaptativo
+                    pomodoroEstimate: focusMethod === 'pomodoro' ? estimate : 0,
                     pomodorosCompleted: 0, 
                     internalInterruptions: 0, 
                     externalInterruptions: 0, 
@@ -931,7 +930,8 @@
                         isRunning,
                         mode,
                         timeRemaining,
-                        startTime
+                        startTime,
+                        endTime
                     }
                 };
                 localStorage.setItem('pomodoroCoreState', JSON.stringify(state));
@@ -941,7 +941,6 @@
                 const state = JSON.parse(localStorage.getItem('pomodoroCoreState'));
                 if (state) {
                     settings = { ...settings, ...state.settings };
-                    // AJUSTE: Migração do formato antigo de 'tasks' para o novo
                     if (Array.isArray(state.tasks)) {
                         tasks = { pomodoro: state.tasks, adaptativo: [] };
                     } else {
@@ -953,11 +952,22 @@
                     focusMethod = state.focusMethod || 'pomodoro';
 
                     if (state.timerState && state.timerState.isRunning) {
-                        const { mode: savedMode, timeRemaining: savedTime, startTime: savedStartTime } = state.timerState;
-                        mode = savedMode;
-                        timeRemaining = savedTime;
-                        startTime = savedStartTime;
-                        startTimer();
+                        const { mode: savedMode, timeRemaining: savedTime, startTime: savedStartTime, endTime: savedEndTime } = state.timerState;
+                        
+                        const isPomodoroMode = focusMethod === 'pomodoro' || savedMode !== 'focus';
+
+                        if (isPomodoroMode && savedEndTime) {
+                            const remaining = Math.round((savedEndTime - Date.now()) / 1000);
+                            if (remaining > 0) {
+                                timeRemaining = remaining;
+                                mode = savedMode;
+                                startTimer();
+                            }
+                        } else if (!isPomodoroMode && savedStartTime) {
+                            timeRemaining = Math.floor((Date.now() - savedStartTime) / 1000);
+                            mode = savedMode;
+                            startTimer();
+                        }
                     }
                 }
                 
