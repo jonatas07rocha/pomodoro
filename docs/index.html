@@ -400,9 +400,6 @@
             let focusMethod = 'pomodoro';
             let deferredInstallPrompt = null;
             
-            // ===================================================================
-            // CHAVE PÚBLICA VAPID APLICADA
-            // ===================================================================
             const VAPID_PUBLIC_KEY = 'BAJbFwEfO56A62lrnxsQ0StXPnJXTau-cDxqTtZ0wQ9oIe8_9hT-hEog4RhH_plbN72mo62o0MlCiaH7_fazjjI';
 
 
@@ -454,11 +451,15 @@
             };
             
             const updateNotificationUI = () => {
+                console.log("DEBUG: Executando updateNotificationUI...");
                 if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+                    console.error("DEBUG: Navegador não suporta notificações, service worker ou push manager.");
                     notificationStatus.textContent = 'Notificações não suportadas.';
                     enableNotificationsBtn.disabled = true;
                     return;
                 }
+
+                console.log("DEBUG: Permissão de notificação atual: ", Notification.permission);
 
                 if (Notification.permission === 'denied') {
                     notificationStatus.textContent = 'Permissão bloqueada.';
@@ -486,6 +487,7 @@
             };
 
             const subscribeUserToPush = () => {
+                console.log("DEBUG: Executando subscribeUserToPush...");
                 if (VAPID_PUBLIC_KEY === 'SUA_CHAVE_VAPID_PUBLICA_AQUI') {
                     console.error('ERRO: Chave VAPID pública não foi definida.');
                     showModal(alertModalOverlay, 'Erro de configuração: A chave de notificação não foi definida pelo desenvolvedor.');
@@ -499,13 +501,13 @@
                     return registration.pushManager.subscribe(subscribeOptions);
                 })
                 .then(pushSubscription => {
-                    console.log('Recebida a PushSubscription: ', JSON.stringify(pushSubscription));
+                    console.log('DEBUG: Recebida a PushSubscription: ', JSON.stringify(pushSubscription));
                     sendSubscriptionToServer(pushSubscription);
                     updateNotificationUI();
                     return pushSubscription;
                 })
                 .catch(err => {
-                    console.error('Falha ao inscrever o usuário: ', err);
+                    console.error('DEBUG: Falha ao inscrever o usuário: ', err);
                     if (Notification.permission === 'denied') {
                         showModal(alertModalOverlay, 'Você bloqueou as notificações. Para ativá-las, mude as permissões para este site nas configurações do seu navegador.');
                     }
@@ -514,22 +516,9 @@
             };
 
             const sendSubscriptionToServer = (subscription) => {
-                console.log('TODO: Enviar inscrição para o servidor.');
+                console.log('DEBUG: TODO: Enviar inscrição para o servidor.');
                 showModal(alertModalOverlay, 'Notificações ativadas com sucesso!');
             };
-
-            enableNotificationsBtn.addEventListener('click', () => {
-                if (Notification.permission === 'default') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            subscribeUserToPush();
-                        }
-                        updateNotificationUI();
-                    });
-                } else if (Notification.permission === 'granted') {
-                    subscribeUserToPush();
-                }
-            });
 
             // --- FUNÇÕES DE GESTÃO DE MODO ---
             const updateMethodToggleUI = () => {
@@ -1090,6 +1079,27 @@
             });
 
             // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+            console.log("DEBUG: Adicionando listener de clique ao botão de notificações.");
+            enableNotificationsBtn.addEventListener('click', () => {
+                console.log("DEBUG: Botão 'Ativar Notificações' clicado.");
+                if (Notification.permission === 'default') {
+                    console.log("DEBUG: Permissão atual: default. Solicitando permissão...");
+                    Notification.requestPermission().then(permission => {
+                        console.log("DEBUG: Usuário respondeu à solicitação. Permissão: ", permission);
+                        if (permission === 'granted') {
+                            console.log("DEBUG: Permissão concedida. Tentando inscrever...");
+                            subscribeUserToPush();
+                        }
+                        updateNotificationUI();
+                    });
+                } else if (Notification.permission === 'granted') {
+                    console.log("DEBUG: Permissão já concedida. Tentando inscrever...");
+                    subscribeUserToPush();
+                } else {
+                    console.log("DEBUG: Permissão não é 'default' nem 'granted'. Estado atual: ", Notification.permission);
+                }
+            });
+
             loadState();
             updateMethodToggleUI();
             if (!isRunning) {
