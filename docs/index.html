@@ -21,33 +21,37 @@
     <!-- Favicon -->
     <link id="favicon" rel="icon" href="icon-192x192.png" type="image/png">
     <style>
+        /* AJUSTE APLICADO: Oculta a barra de rolagem para uma experiência mais nativa */
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        html {
+           scrollbar-width: none; /* Para Firefox */
+        }
+
+        /* AJUSTE APLICADO: Body agora permite rolagem e tem padding vertical para respiro */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000000;
             background-image: radial-gradient(circle at center, #1a202c 0%, #000000 70%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
-            padding: 1rem;
+            padding: 2rem 1rem; /* Espaçamento para a "concha" não colar nas bordas */
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
         
+        /* AJUSTE APLICADO: Removido o layout flex fixo. A altura agora é automática, baseada no conteúdo. */
         .device-shell {
             background-color: #1F2937;
-            border-radius: 2.5rem;
+            border-radius: 1.75rem;
             border: 1px solid rgba(255, 255, 255, 0.05);
             padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
             color: #D1D5DB;
             width: 100%;
             max-width: 420px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            height: calc(100vh - 2rem);
-            max-height: 850px;
+            margin: 0 auto; /* Garante o centramento horizontal */
+            box-sizing: border-box;
         }
 
         .timer-panel {
@@ -148,67 +152,73 @@
             </button>
         </header>
 
-        <!-- PAINEL DO TIMER -->
-        <div class="timer-panel">
-            <div class="relative w-56 h-56 mx-auto">
-                <svg class="w-full h-full" viewBox="0 0 100 100">
-                    <circle class="text-gray-800" stroke-width="7" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
-                    <circle id="progress-ring" class="text-blue-500" stroke-width="7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: center;" />
-                </svg>
-                <div id="timer-display" class="absolute inset-0 flex items-center justify-center text-5xl font-bold text-white">
-                    25:00
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main>
+            <!-- PAINEL DO TIMER -->
+            <div class="timer-panel">
+                <div class="relative w-56 h-56 mx-auto">
+                    <svg class="w-full h-full" viewBox="0 0 100 100">
+                        <circle class="text-gray-800" stroke-width="7" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                        <circle id="progress-ring" class="text-blue-500" stroke-width="7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: center;" />
+                    </svg>
+                    <div id="timer-display" class="absolute inset-0 flex items-center justify-center text-5xl font-bold text-white">
+                        25:00
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- TAREFA ATUAL E CICLOS -->
-        <div class="text-center mb-2">
-            <p class="text-gray-400 text-sm">Foco em:</p>
-            <p id="current-task-display" class="text-white font-semibold text-base truncate">Nenhuma tarefa selecionada</p>
-            <div id="pomodoro-cycles" class="flex justify-center items-center space-x-2 mt-1 h-6"></div>
-        </div>
-
-        <!-- LISTA DE TAREFAS -->
-        <div class="flex-grow flex flex-col min-h-0 mb-4">
-            <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas do Dia</h2>
-            <div id="task-list" class="space-y-2 flex-grow overflow-y-auto pr-2"></div>
-            <!-- FORMULÁRIO DE ADIÇÃO DE TAREFA -->
-            <div class="flex mt-3 space-x-2 items-center bg-gray-900 p-2 rounded-lg">
-                <input type="text" id="new-task-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
-                <div class="flex items-center">
-                    <label for="new-task-estimate" class="text-sm text-gray-400 mr-1 font-bold">#</label>
-                    <input type="number" id="new-task-estimate" class="w-12 bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="1" min="1">
-                </div>
-                <button id="add-task-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold w-10 h-10 rounded-lg transition-colors text-2xl flex-shrink-0 flex items-center justify-center">+</button>
+            <!-- TAREFA ATUAL E CICLOS -->
+            <div class="text-center mb-4">
+                <p class="text-gray-400 text-sm">Foco em:</p>
+                <p id="current-task-display" class="text-white font-semibold text-base truncate">Nenhuma tarefa selecionada</p>
+                <div id="pomodoro-cycles" class="flex justify-center items-center space-x-2 mt-1 h-6"></div>
             </div>
-        </div>
+
+            <!-- LISTA DE TAREFAS -->
+            <div class="flex flex-col min-h-0 mb-4">
+                <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas do Dia</h2>
+                <div id="task-list" class="space-y-2 flex-grow pr-2"></div>
+                <!-- FORMULÁRIO DE ADIÇÃO DE TAREFA -->
+                <div class="flex mt-3 space-x-2 items-center bg-gray-900 p-2 rounded-lg">
+                    <input type="text" id="new-task-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
+                    <div class="flex items-center">
+                        <label for="new-task-estimate" class="text-sm text-gray-400 mr-1 font-bold">#</label>
+                        <input type="number" id="new-task-estimate" class="w-12 bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="1" min="1">
+                    </div>
+                    <button id="add-task-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold w-10 h-10 rounded-lg transition-colors text-2xl flex-shrink-0 flex items-center justify-center">+</button>
+                </div>
+            </div>
+        </main>
         
-        <!-- CONTROLES -->
-        <div class="flex flex-col items-center space-y-4 mt-4">
-            <!-- CONTROLES PRINCIPAIS -->
-            <div id="player-controls" class="flex items-center justify-center space-x-4">
-                <button id="internal-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Interna">
-                    <i data-lucide="zap-off" class="w-6 h-6"></i>
-                </button>
-                <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
-                </button>
-                <button id="external-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Externa">
-                    <i data-lucide="user-x" class="w-6 h-6"></i>
-                </button>
+        <!-- RODAPÉ -->
+        <footer class="mt-auto pt-2">
+            <!-- AJUSTE APLICADO: Espaçamento vertical (space-y-4) aumentado para dar mais respiro aos botões -->
+            <div class="flex flex-col items-center space-y-4">
+                <!-- CONTROLES PRINCIPAIS -->
+                <div id="player-controls" class="flex items-center justify-center space-x-4">
+                    <button id="internal-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Interna">
+                        <i data-lucide="zap-off" class="w-6 h-6"></i>
+                    </button>
+                    <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
+                    </button>
+                    <button id="external-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Externa">
+                        <i data-lucide="user-x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <!-- CONTROLES SECUNDÁRIOS -->
+                <div id="secondary-controls" class="flex items-center justify-center space-x-6">
+                     <button id="reset-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Zerar o dia">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    </button>
+                    <button id="stats-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Ver Estatísticas">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                    </button>
+                    <button id="settings-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Configurações">
+                        <i data-lucide="settings-2" class="w-5 h-5"></i>
+                    </button>
+                </div>
             </div>
-            <!-- CONTROLES SECUNDÁRIOS -->
-            <div id="secondary-controls" class="flex items-center justify-center space-x-6">
-                 <button id="reset-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Zerar o dia">
-                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-                </button>
-                <button id="stats-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Ver Estatísticas">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                </button>
-                <button id="settings-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Configurações">
-                    <i data-lucide="settings-2" class="w-5 h-5"></i>
-                </button>
-            </div>
-        </div>
+        </footer>
     </div>
 
     <!-- MODAIS -->
