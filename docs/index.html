@@ -838,7 +838,7 @@
             
                 startPauseBtn.innerHTML = `<i data-lucide="${btnIcon}" class="w-8 h-8 ${btnIcon === 'play' ? 'pl-1' : ''}"></i>`;
             
-                lucide.createIcons(); // Forçando um novo deploy para Vercel ler a configuração do Root Directory
+                lucide.createIcons();
             };
 
             const formatTime = (totalSeconds) => {
