@@ -1,7 +1,5 @@
-const CACHE_NAME = 'foco-total-core-v1.5'; // Versão incrementada para forçar a atualização
+const CACHE_NAME = 'foco-total-core-v1.6'; // Versão incrementada para forçar a atualização
 
-// URLs de CDN removidas desta lista para evitar erros de CORS na instalação.
-// Elas serão cacheadas dinamicamente pelo evento 'fetch'.
 const urlsToCache = [
     './',
     'index.html',
@@ -38,23 +36,25 @@ self.addEventListener('activate', event => {
     );
 });
 
+// ### CORREÇÃO APLICADA AQUI ###
 self.addEventListener('fetch', event => {
+    // Ignora requisições que não são para recursos web (como as de extensões do Chrome)
+    if (!event.request.url.startsWith('http')) {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Se o recurso estiver no cache, retorna ele.
                 if (response) {
                     return response;
                 }
-                // Se não, busca na rede.
                 return fetch(event.request).then(
                     networkResponse => {
-                        // Apenas cacheia respostas válidas.
                         if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
                             return networkResponse;
                         }
                         
-                        // Clona a resposta para poder enviá-la ao navegador e ao cache.
                         const responseToCache = networkResponse.clone();
                         
                         caches.open(CACHE_NAME)
@@ -69,12 +69,11 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// Listener para receber a notificação push do servidor.
 self.addEventListener('push', event => {
     const data = event.data ? event.data.json() : {};
     const title = data.title || 'Foco Total';
     const options = {
-        body: data.body || 'Sua sessão de foco terminou!',
+        body: data.body || 'A sua sessão de foco terminou!',
         icon: 'icon-192x192.png',
         badge: 'icon-192x192.png',
         vibrate: [200, 100, 200]
@@ -84,10 +83,9 @@ self.addEventListener('push', event => {
     );
 });
 
-// Listener para quando o usuário clica na notificação.
 self.addEventListener('notificationclick', event => {
     event.notification.close();
     event.waitUntil(
-        clients.openWindow('./') // Abre a página raiz do app
+        clients.openWindow('./')
     );
 });
