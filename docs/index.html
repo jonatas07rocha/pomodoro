@@ -21,23 +21,17 @@
     <!-- Favicon -->
     <link id="favicon" rel="icon" href="icon-192x192.png" type="image/png">
     <style>
-        body::-webkit-scrollbar {
-            display: none;
-        }
-        html {
-            scrollbar-width: none; /* Para Firefox */
-        }
-
+        body::-webkit-scrollbar { display: none; }
+        html { scrollbar-width: none; }
         body {
             font-family: 'Inter', sans-serif;
             background-color: #000000;
             background-image: radial-gradient(circle at center, #1a202c 0%, #000000 70%);
             margin: 0;
-            padding: 2rem 1rem; /* Espaçamento para a "concha" não colar nas bordas */
+            padding: 2rem 1rem;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-        
         .device-shell {
             background-color: #1F2937;
             border-radius: 1.75rem;
@@ -47,10 +41,9 @@
             width: 100%;
             max-width: 420px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            margin: 0 auto; /* Garante o centramento horizontal */
+            margin: 0 auto;
             box-sizing: border-box;
         }
-
         .timer-panel {
             background-color: #111827;  
             border-radius: 1.25rem;
@@ -58,138 +51,40 @@
             margin-bottom: 1rem;
             box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.5);  
         }
-
-        #progress-ring {
-            transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
-        }
-
-        .task-item {
-            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.3s ease, opacity 0.3s, transform 0.3s ease;
-        }
+        #progress-ring { transition: stroke-dashoffset 1s linear, stroke 0.5s ease; }
+        .task-item { transition: background-color 0.2s, border-color 0.2s, box-shadow 0.3s ease, opacity 0.3s, transform 0.3s ease; }
         .task-item.selected {
             background-color: #374151;
             border-color: #3B82F6;
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
         }
-        
-        #timer-display {
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-        }
-
+        #timer-display { text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
           -webkit-appearance: none; 
           margin: 0; 
         }
-        input[type=number] {
-          -moz-appearance: textfield;
-        }
-
+        input[type=number] { -moz-appearance: textfield; }
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; visibility: hidden;
             transition: opacity 0.3s, visibility 0.3s;
         }
-        .modal-overlay.visible {
-            opacity: 1;
-            visibility: visible;
-        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
         .modal-content {
-            background-color: #1F2937;
-            padding: 2rem;
-            border-radius: 1rem;
-            border: 1px solid #3B82F6;
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-            color: white;
-            transform: scale(0.9);
-            transition: transform 0.3s;
-            width: 90%;
-            max-width: 500px;
+            background-color: #1F2937; padding: 2rem; border-radius: 1rem;
+            border: 1px solid #3B82F6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            color: white; transform: scale(0.9); transition: transform 0.3s;
+            width: 90%; max-width: 500px;
         }
-        .modal-overlay.visible .modal-content {
-            transform: scale(1);
-        }
-        
-        #install-banner {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: #2563EB;
-            color: white;
-            padding: 1rem;
-            text-align: center;
-            z-index: 2000;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
-        }
-
-        /* Estilos para o interruptor de notificações */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 28px;
-        }
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #4B5563;
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 28px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            -webkit-transition: .4s;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #2563EB;
-        }
-        input:focus + .slider {
-            box-shadow: 0 0 1px #2563EB;
-        }
-        input:checked + .slider:before {
-            -webkit-transform: translateX(22px);
-            -ms-transform: translateX(22px);
-            transform: translateX(22px);
-        }
-        input:disabled + .slider {
-            cursor: not-allowed;
-            background-color: #374151;
-        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
     </style>
 </head>
 <body>
     <div id="device-shell" class="device-shell">
-        <!-- CABEÇALHO -->
+        <!-- HEADER -->
         <header class="flex justify-between items-center mb-4">
             <h1 class="text-xl font-bold text-white">Foco Total</h1>
             <div id="focus-method-toggle" class="flex bg-gray-900 rounded-lg p-1 text-xs font-semibold">
@@ -201,33 +96,31 @@
             </button>
         </header>
 
-        <!-- CONTEÚDO PRINCIPAL -->
+        <!-- MAIN CONTENT -->
         <main>
-            <!-- PAINEL DO TIMER -->
+            <!-- TIMER PANEL -->
             <div class="timer-panel">
                 <div class="relative w-56 h-56 mx-auto">
                     <svg class="w-full h-full" viewBox="0 0 100 100">
                         <circle class="text-gray-800" stroke-width="7" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
                         <circle id="progress-ring" class="text-blue-500" stroke-width="7" stroke-linecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" style="transform: rotate(-90deg); transform-origin: center;" />
                     </svg>
-                    <div id="timer-display" class="absolute inset-0 flex items-center justify-center text-5xl font-bold text-white">
-                        25:00
-                    </div>
+                    <div id="timer-display" class="absolute inset-0 flex items-center justify-center text-5xl font-bold text-white">25:00</div>
                 </div>
             </div>
 
-            <!-- TAREFA ATUAL E CICLOS -->
+            <!-- CURRENT TASK & CYCLES -->
             <div class="text-center mb-4">
                 <p class="text-gray-400 text-sm">Foco em:</p>
                 <p id="current-task-display" class="text-white font-semibold text-base truncate">Nenhuma tarefa selecionada</p>
                 <div id="pomodoro-cycles" class="flex justify-center items-center space-x-2 mt-1 h-6"></div>
             </div>
 
-            <!-- LISTA DE TAREFAS -->
+            <!-- TASK LIST -->
             <div class="flex flex-col min-h-0 mb-4">
                 <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas do Dia</h2>
                 <div id="task-list" class="space-y-2 flex-grow pr-2"></div>
-                <!-- FORMULÁRIO DE ADIÇÃO DE TAREFA -->
+                <!-- ADD TASK FORM -->
                 <div class="flex flex-wrap sm:flex-nowrap gap-2 mt-3 items-center bg-gray-900 p-2 rounded-lg">
                     <input type="text" id="new-task-input" class="grow min-w-[120px] bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
                     <div id="task-estimate-container" class="flex items-center flex-shrink-0">
@@ -239,48 +132,30 @@
             </div>
         </main>
         
-        <!-- RODAPÉ -->
+        <!-- FOOTER -->
         <footer class="mt-auto pt-2">
             <div class="flex flex-col items-center space-y-4">
-                <!-- CONTROLES PRINCIPAIS -->
+                <!-- MAIN CONTROLS -->
                 <div id="player-controls" class="flex items-center justify-center space-x-4">
-                    <button id="internal-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Interna">
-                        <i data-lucide="zap-off" class="w-6 h-6"></i>
-                    </button>
-                    <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center">
-                    </button>
-                    <button id="external-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Externa">
-                        <i data-lucide="user-x" class="w-6 h-6"></i>
-                    </button>
+                    <button id="internal-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Interna"><i data-lucide="zap-off" class="w-6 h-6"></i></button>
+                    <button id="start-pause-btn" class="w-20 h-20 text-white font-bold rounded-full text-base transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center"></button>
+                    <button id="external-interrupt-btn" class="bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-full transition-colors transform hover:scale-110" title="Registrar Interrupção Externa"><i data-lucide="user-x" class="w-6 h-6"></i></button>
                 </div>
-                <!-- CONTROLES SECUNDÁRIOS -->
+                <!-- SECONDARY CONTROLS -->
                 <div id="secondary-controls" class="flex items-center justify-center space-x-6">
-                     <button id="reset-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Zerar o dia">
-                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-                    </button>
-                    <button id="stats-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Ver Estatísticas">
-                        <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                    </button>
-                    <button id="settings-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Configurações">
-                        <i data-lucide="settings-2" class="w-5 h-5"></i>
-                    </button>
+                     <button id="reset-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Zerar o dia"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+                    <button id="stats-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Ver Estatísticas"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></button>
+                    <button id="settings-btn" class="text-gray-400 hover:text-white p-2 rounded-full transition-colors" title="Configurações"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
                 </div>
             </div>
         </footer>
     </div>
 
-    <!-- MODAIS -->
+    <!-- MODALS -->
     <div id="alert-modal-overlay" class="modal-overlay">
         <div class="modal-content text-center">
             <p id="alert-modal-message" class="mb-4"></p>
             <button id="alert-modal-close-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">OK</button>
-        </div>
-    </div>
-    <div id="session-end-modal-overlay" class="modal-overlay">
-        <div class="modal-content text-center">
-            <h2 class="text-xl font-bold text-white mb-2">Sessão Finalizada!</h2>
-            <p id="session-end-message" class="mb-6 text-gray-300"></p>
-            <button id="session-end-close-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Ótimo!</button>
         </div>
     </div>
     <div id="settings-modal-overlay" class="modal-overlay">
@@ -310,13 +185,13 @@
                     <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
                </div>
             </div>
-            <!-- SEÇÃO DE NOTIFICAÇÕES REFEITA COM INTERRUPTOR -->
+            <!-- NOTIFICATIONS SECTION - LOGIC IS TEMPORARILY DISABLED -->
             <div class="mb-4">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Notificações</h3>
                 <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-                    <span id="notification-status" class="text-sm text-gray-300"></span>
+                    <span id="notification-status" class="text-sm text-gray-300">Desativado nesta versão</span>
                     <label class="switch">
-                        <input type="checkbox" id="notification-toggle">
+                        <input type="checkbox" id="notification-toggle" disabled>
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -326,365 +201,51 @@
             </button>
         </div>
     </div>
-    <div id="stats-modal-overlay" class="modal-overlay">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-white">Relatório do Dia</h2>
-            </div>
-            <div id="stats-content" class="bg-gray-800 p-4 rounded-lg max-h-80 overflow-y-auto"></div>
-            <button id="stats-modal-close-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl mt-6 transition-colors">Fechar</button>
-        </div>
-    </div>
-    <div id="help-modal-overlay" class="modal-overlay">
-        <div class="modal-content text-sm">
-            <h2 class="text-xl font-bold text-white mb-4 text-center">Ajuda</h2>
-            <div id="help-content-pomodoro" class="space-y-4 text-gray-300">
-                <h3 class="text-lg font-semibold text-blue-400">O que é a Técnica Pomodoro?</h3>
-                <p>É um método que usa um cronômetro para dividir o trabalho em períodos de foco intenso (geralmente 25 min), separados por pausas curtas.</p>
-                <ol class="list-decimal list-inside space-y-2 bg-gray-800 p-4 rounded-lg">
-                    <li>Escolha uma tarefa e inicie o timer.</li>
-                    <li>Trabalhe na tarefa sem interrupções.</li>
-                    <li>Ao final, faça uma pausa curta.</li>
-                    <li>Após 4 ciclos, faça uma pausa longa.</li>
-                </ol>
-            </div>
-            <div id="help-content-adaptativo" class="space-y-4 text-gray-300 hidden">
-                <h3 class="text-lg font-semibold text-blue-400">O que é o Método Adaptativo?</h3>
-                <p>É um método flexível onde você trabalha pelo tempo que conseguir se manter focado, sem um alarme para te interromper. É ideal para trabalho criativo e profundo.</p>
-                <ol class="list-decimal list-inside space-y-2 bg-gray-800 p-4 rounded-lg">
-                    <li>Escolha uma tarefa e inicie o cronômetro (ele contará para cima).</li>
-                    <li>Mergulhe na tarefa, mantendo o foco.</li>
-                    <li>Quando sentir que sua concentração está diminuindo, pare o cronômetro.</li>
-                    <li>Faça uma pausa e analise por quanto tempo conseguiu focar.</li>
-                </ol>
-            </div>
-            <button id="help-modal-close-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl mt-6 transition-colors">Entendi!</button>
-        </div>
-    </div>
-    <div id="reset-confirm-modal-overlay" class="modal-overlay">
-        <div class="modal-content text-center">
-            <h2 class="text-xl font-bold text-white mb-2">Zerar o Dia?</h2>
-            <p id="alert-modal-message-reset" class="mb-6 text-gray-300">Todas as tarefas e o progresso serão apagados. As configurações e o modo de foco serão mantidos. Deseja continuar?</p>
-            <div class="flex justify-center space-x-4">
-                <button id="reset-cancel-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Cancelar</button>
-                <button id="reset-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Sim, Zerar</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- BANNER DE INSTALAÇÃO DO PWA -->
-    <div id="install-banner">
-        <div class="max-w-md mx-auto">
-            <p class="font-semibold mb-2">Tenha a melhor experiência!</p>
-            <p class="text-sm mb-3">Adicione o Foco Total à sua tela de início para acesso rápido e notificações confiáveis.</p>
-            <button id="install-btn" class="bg-white text-blue-600 font-bold py-2 px-5 rounded-lg mr-2">Instalar</button>
-            <button id="install-dismiss-btn" class="bg-transparent border border-white text-white font-bold py-2 px-5 rounded-lg">Agora não</button>
-        </div>
-    </div>
     
     <script>
-        // --- INÍCIO DO REGISTRO DO SERVICE WORKER ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado com sucesso:', registration.scope);
-                    }).catch(error => {
-                        console.log('Falha ao registrar o Service Worker:', error);
-                    });
-            });
-        }
-        // --- FIM DO REGISTRO DO SERVICE WORKER ---
-
         document.addEventListener('DOMContentLoaded', () => {
-            // --- ELEMENTOS DO DOM ---
+            // --- DOM ELEMENTS ---
             const timerDisplay = document.getElementById('timer-display');
             const startPauseBtn = document.getElementById('start-pause-btn');
-            const internalInterruptBtn = document.getElementById('internal-interrupt-btn');
-            const externalInterruptBtn = document.getElementById('external-interrupt-btn');
-            const resetBtn = document.getElementById('reset-btn');
             const settingsBtn = document.getElementById('settings-btn');
-            const statsBtn = document.getElementById('stats-btn');
-            const helpBtn = document.getElementById('help-btn');
-            const progressRing = document.getElementById('progress-ring');
             const newTaskInput = document.getElementById('new-task-input');
-            const taskEstimateContainer = document.getElementById('task-estimate-container');
-            const newTaskEstimateInput = document.getElementById('new-task-estimate');
             const addTaskBtn = document.getElementById('add-task-btn');
             const taskListEl = document.getElementById('task-list');
             const currentTaskDisplay = document.getElementById('current-task-display');
-            const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
-            const focusMethodToggle = document.getElementById('focus-method-toggle');
-            // Modais
-            const statsModalOverlay = document.getElementById('stats-modal-overlay');
-            const statsModalCloseBtn = document.getElementById('stats-modal-close-btn');
-            const statsContentEl = document.getElementById('stats-content');
-            const alertModalOverlay = document.getElementById('alert-modal-overlay');
-            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
-            const sessionEndModalOverlay = document.getElementById('session-end-modal-overlay');
-            const sessionEndCloseBtn = document.getElementById('session-end-close-btn');
             const settingsModalOverlay = document.getElementById('settings-modal-overlay');
             const settingsSaveBtn = document.getElementById('settings-save-btn');
-            const helpModalOverlay = document.getElementById('help-modal-overlay');
-            const helpModalCloseBtn = document.getElementById('help-modal-close-btn');
-            const helpContentPomodoro = document.getElementById('help-content-pomodoro');
-            const helpContentAdaptativo = document.getElementById('help-content-adaptativo');
-            const resetConfirmModalOverlay = document.getElementById('reset-confirm-modal-overlay');
-            const resetConfirmBtn = document.getElementById('reset-confirm-btn');
-            const resetCancelBtn = document.getElementById('reset-cancel-btn');
-            // Inputs de Configurações
             const focusDurationInput = document.getElementById('focus-duration');
             const shortBreakDurationInput = document.getElementById('short-break-duration');
             const longBreakDurationInput = document.getElementById('long-break-duration');
             const longBreakIntervalInput = document.getElementById('long-break-interval');
-            // Banner PWA
-            const installBanner = document.getElementById('install-banner');
-            const installBtn = document.getElementById('install-btn');
-            const installDismissBtn = document.getElementById('install-dismiss-btn');
-            // Notificações
-            const notificationToggle = document.getElementById('notification-toggle');
-            const notificationStatus = document.getElementById('notification-status');
+            const alertModalOverlay = document.getElementById('alert-modal-overlay');
+            const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
 
-
-            // --- ESTADO DA APLICAÇÃO ---
-            let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime, startTime, endTime;
+            // --- APP STATE ---
+            let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime;
             let tasks = { pomodoro: [], adaptativo: [] };
             let selectedTaskId = null, pomodoroSessionCount = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
-            let focusMethod = 'pomodoro';
-            let deferredInstallPrompt = null;
-            
-            const VAPID_PUBLIC_KEY = 'BPkpKRNSvYRV4rBnQDN4uTv0S0D2yP4zTn1Ahlgki-Vm87wU6U1NqY21DHuqJTmcmuQN7cJvcNrNNXjDN46szN_Iw';
+            let focusMethod = 'pomodoro'; // 'pomodoro' or 'adaptativo'
 
-
-            // --- LÓGICA DE INSTALAÇÃO DO PWA ---
-            window.addEventListener('beforeinstallprompt', (event) => {
-                event.preventDefault();
-                deferredInstallPrompt = event;
-                if (!localStorage.getItem('installBannerDismissed')) {
-                    installBanner.style.display = 'block';
-                }
-            });
-
-            installBtn.addEventListener('click', () => {
-                if (deferredInstallPrompt) {
-                    deferredInstallPrompt.prompt();
-                    deferredInstallPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('Utilizador aceitou a instalação');
-                        } else {
-                            console.log('Utilizador recusou a instalação');
-                        }
-                        deferredInstallPrompt = null;
-                        installBanner.style.display = 'none';
-                    });
-                } else if (navigator.userAgent.match(/iPhone|iPad|iPod/i)) {
-                    showModal(alertModalOverlay, 'Para instalar no iOS, toque no ícone de Partilhar no Safari e depois em "Adicionar ao Ecrã Principal".');
-                }
-            });
-
-            installDismissBtn.addEventListener('click', () => {
-                localStorage.setItem('installBannerDismissed', 'true');
-                installBanner.style.display = 'none';
-            });
-            
-            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-                 installBanner.style.display = 'none';
-            }
-
-            // --- LÓGICA DE NOTIFICAÇÕES PUSH (FINAL) ---
-            const urlBase64ToUint8Array = (base64String) => {
-                const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                const rawData = window.atob(base64);
-                const outputArray = new Uint8Array(rawData.length);
-                for (let i = 0; i < rawData.length; ++i) {
-                    outputArray[i] = rawData.charCodeAt(i);
-                }
-                return outputArray;
-            };
-            
-            async function updateNotificationUI() {
-                if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-                    notificationStatus.textContent = 'Não suportado';
-                    notificationToggle.disabled = true;
-                    return;
-                }
-
-                const permission = Notification.permission;
-                if (permission === 'denied') {
-                    notificationStatus.textContent = 'Permissão bloqueada';
-                    notificationToggle.checked = false;
-                    notificationToggle.disabled = true;
-                    return;
-                }
-
-                notificationToggle.disabled = false;
-                
-                try {
-                    const registration = await navigator.serviceWorker.ready;
-                    const subscription = await registration.pushManager.getSubscription();
-
-                    if (subscription) {
-                        notificationStatus.textContent = 'Notificações Ativadas';
-                        notificationToggle.checked = true;
-                        saveSubscriptionLocally(subscription);
-                    } else {
-                        notificationStatus.textContent = 'Notificações Desativadas';
-                        notificationToggle.checked = false;
-                    }
-                } catch (error) {
-                    console.error("Erro ao verificar inscrição do Service Worker:", error);
-                    notificationStatus.textContent = 'Erro ao verificar';
-                    notificationToggle.checked = false;
-                }
-            }
-
-            async function subscribeUserToPush() {
-                try {
-                    const registration = await navigator.serviceWorker.ready;
-                    const subscription = await registration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                    });
-                    
-                    console.log('Inscrição Push recebida: ', JSON.stringify(subscription));
-                    saveSubscriptionLocally(subscription);
-                    
-                    await triggerWelcomeNotification(subscription);
-
-                } catch (err) {
-                    console.error('Falha ao inscrever o utilizador: ', err);
-                    showModal(alertModalOverlay, 'Falha ao ativar notificações. Por favor, tente novamente.');
-                    updateNotificationUI(); 
-                }
-            }
-
-            async function unsubscribeUser() {
-                try {
-                    const registration = await navigator.serviceWorker.ready;
-                    const subscription = await registration.pushManager.getSubscription();
-                    if (subscription) {
-                        await subscription.unsubscribe();
-                        console.log('Inscrição cancelada com sucesso.');
-                        localStorage.removeItem('pushSubscription');
-                    }
-                } catch (err) {
-                    console.error('Erro ao cancelar a inscrição: ', err);
-                }
-            }
-
-            async function handleNotificationToggleChange() {
-                notificationToggle.disabled = true; 
-
-                if (this.checked) {
-                    const permission = await Notification.requestPermission();
-                    if (permission === 'granted') {
-                        await subscribeUserToPush();
-                    } else {
-                        showModal(alertModalOverlay, 'Permissão para notificações foi negada.');
-                    }
-                } else {
-                    await unsubscribeUser();
-                }
-                await updateNotificationUI();
-            }
-
-            const saveSubscriptionLocally = (subscription) => {
-                localStorage.setItem('pushSubscription', JSON.stringify(subscription));
-                console.log('Inscrição salva localmente.');
-            };
-
-            async function triggerWelcomeNotification(subscription) {
-                if (!subscription) {
-                    console.log('Nenhuma inscrição para a notificação de boas-vindas.');
-                    return;
-                }
-                try {
-                    console.log('Enviando notificação de boas-vindas para o backend...');
-                    const response = await fetch('/api/enviar-notificacao', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            subscription: subscription,
-                            payload: {
-                                title: 'Bem-vindo(a) ao Foco Total! 🎉',
-                                body: 'As notificações estão ativadas e prontas!'
-                            }
-                        }),
-                    });
-                    if (!response.ok) {
-                       const errorBody = await response.json();
-                       console.error('Erro do servidor na notificação de boas-vindas:', errorBody);
-                    }
-                } catch (error) {
-                    console.error('Erro ao disparar a notificação de boas-vindas:', error);
-                }
-            }
-
-            async function triggerPushNotification() {
-                const subscriptionString = localStorage.getItem('pushSubscription');
-                if (!subscriptionString) {
-                    console.log('Nenhuma inscrição encontrada para enviar notificação PUSH.');
-                    return;
-                }
-
-                const subscription = JSON.parse(subscriptionString);
-
-                try {
-                    console.log('Tentando enviar notificação PUSH para o backend...');
-                    const response = await fetch('/api/enviar-notificacao', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ subscription: subscription }),
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Falha na resposta do servidor ao enviar notificação.');
-                    }
-
-                    const data = await response.json();
-                    console.log('Resposta do servidor de notificação:', data);
-                } catch (error) {
-                    console.error('Erro ao tentar disparar a notificação push:', error);
-                }
-            }
-
-
-            // --- FUNÇÕES DE GESTÃO DE MODO ---
-            const updateMethodToggleUI = () => {
-                const buttons = focusMethodToggle.querySelectorAll('.method-btn');
-                buttons.forEach(btn => {
-                    btn.classList.toggle('bg-blue-600', btn.dataset.method === focusMethod);
-                    btn.classList.toggle('text-white', btn.dataset.method === focusMethod);
-                    btn.classList.toggle('text-gray-400', btn.dataset.method !== focusMethod);
-                });
-                
-                const isPomodoro = focusMethod === 'pomodoro';
-                pomodoroCyclesEl.style.display = isPomodoro ? 'flex' : 'none';
-                taskEstimateContainer.style.display = isPomodoro ? 'flex' : 'none';
-                helpContentPomodoro.style.display = isPomodoro ? 'block' : 'none';
-                helpContentAdaptativo.style.display = isPomodoro ? 'none' : 'block';
-                
-                if (!isRunning) {
-                    resetTimer('focus');
-                }
-                renderTasks(); 
-            };
-
-            // --- FUNÇÕES DO TIMER ---
+            // --- FUNCTIONS ---
             const showModal = (modalOverlay, message) => {
-                const messageElId = modalOverlay.id.replace('-overlay', '-message');
-                const messageEl = document.getElementById(messageElId);
+                const messageEl = modalOverlay.querySelector('p');
                 if(messageEl && message) messageEl.textContent = message;
                 modalOverlay.classList.add('visible');
             };
 
             const hideModal = (modalOverlay) => {
                 modalOverlay.classList.remove('visible');
-            }
+            };
+
+            const updateTimerDisplay = () => {
+                const minutes = Math.floor(Math.abs(timeRemaining) / 60);
+                const seconds = Math.abs(timeRemaining) % 60;
+                const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                timerDisplay.textContent = display;
+                document.title = `${display} - Foco Total`;
+            };
 
             const startTimer = () => {
                 if (isRunning) return;
@@ -692,559 +253,164 @@
                     showModal(alertModalOverlay, 'Por favor, selecione uma tarefa para iniciar o foco.');
                     return;
                 }
-
                 isRunning = true;
-                
-                if (focusMethod === 'pomodoro' || mode !== 'focus') {
-                    endTime = Date.now() + timeRemaining * 1000;
-                } else {
-                    startTime = Date.now() - timeRemaining * 1000;
-                }
-                
-                updateUI();
-                timerInterval = setInterval(updateTimer, 1000);
-            };
-
-            const pauseTimer = () => {
-                if (!isRunning) return;
-                isRunning = false;
-                clearInterval(timerInterval);
-                saveState();
-                updateUI();
-            };
-            
-            const updateTimerDisplay = () => {
-                const minutes = Math.floor(Math.abs(timeRemaining) / 60);
-                const seconds = Math.abs(timeRemaining) % 60;
-                const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                timerDisplay.textContent = display;
-                document.title = `${display} - Foco Total`;
-            
-                const circumference = 2 * Math.PI * 45;
-                let offset = circumference; 
-                if (focusMethod === 'pomodoro') {
-                    offset = circumference - (timeRemaining / totalTime) * circumference;
-                }
-                progressRing.style.strokeDasharray = circumference;
-                progressRing.style.strokeDashoffset = isNaN(offset) || offset < 0 ? circumference : offset;
-            };
-
-            const updateTimer = () => {
-                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                const endTime = Date.now() + timeRemaining * 1000;
+                timerInterval = setInterval(() => {
                     const remaining = Math.round((endTime - Date.now()) / 1000);
                     if (remaining >= 0) {
                         timeRemaining = remaining;
                         updateTimerDisplay();
                     } else {
                         clearInterval(timerInterval);
-                        switchMode();
+                        // Notification logic will be re-added here in Phase 2
+                        isRunning = false;
                     }
-                } else { 
-                    timeRemaining = Math.floor((Date.now() - startTime) / 1000);
-                    updateTimerDisplay();
-                }
+                }, 1000);
+                updateUI();
             };
 
-            const switchMode = () => {
+            const pauseTimer = () => {
+                if (!isRunning) return;
                 isRunning = false;
-
-                if (mode === 'focus' && focusMethod === 'pomodoro') {
-                    triggerPushNotification();
-
-                    if ('Notification' in window && Notification.permission === 'granted') {
-                        try {
-                            const notificationBody = (pomodoroSessionCount + 1) % settings.longBreakInterval === 0
-                                ? `Ótimo trabalho! Hora de uma pausa longa.`
-                                : `Sessão finalizada! Hora de uma pausa curta.`;
-
-                            new Notification('Foco Total ⏰', {
-                                body: notificationBody,
-                                icon: 'icon-192x192.png',
-                                tag: 'foco-total-session-end'
-                            });
-                        } catch (e) {
-                            console.error("Erro ao criar notificação local:", e);
-                        }
-                    }
-                }
-
-                if (mode === 'focus') {
-                    if (focusMethod === 'pomodoro') {
-                        pomodoroSessionCount++;
-                        const task = tasks.pomodoro.find(t => t.id === selectedTaskId);
-                        if(task) {
-                            task.pomodorosCompleted++;
-                            task.focusTime += totalTime;
-                        }
-                        renderTasks();
-                    }
-                    mode = (focusMethod === 'pomodoro' && pomodoroSessionCount % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
-                } else {
-                    mode = 'focus';
-                }
-                resetTimer();
+                clearInterval(timerInterval);
+                updateUI();
             };
 
             const resetTimer = (forceMode = null) => {
                 clearInterval(timerInterval);
                 isRunning = false;
                 mode = forceMode || mode;
-
-                if (focusMethod === 'pomodoro' || mode !== 'focus') {
-                    timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
-                    totalTime = timeRemaining;
-                } else {
-                    timeRemaining = 0;
-                    totalTime = 0;
-                }
-                saveState();
+                timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
+                totalTime = timeRemaining;
                 updateUI();
             };
 
-            const resetDay = () => {
-                pauseTimer();
-                tasks[focusMethod] = []; 
-                selectedTaskId = null;
-                if (focusMethod === 'pomodoro') {
-                    pomodoroSessionCount = 0;
-                }
-                resetTimer('focus');
-                renderTasks();
-                hideModal(resetConfirmModalOverlay);
-            };
-
             const updateUI = () => {
-                updateTimerDisplay(); 
-                
-                let modeColor = mode === 'focus' ? 'blue' : 'green';
-            
-                progressRing.classList.remove('text-blue-500', 'text-green-500');
-                progressRing.classList.add(`text-${modeColor}-500`);
-
-                startPauseBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-green-600', 'hover:bg-green-700', 'bg-red-600', 'hover:bg-red-700');
-                
-                let btnIcon = '';
-                if (isRunning) {
-                    startPauseBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-                    btnIcon = (focusMethod === 'adaptativo' && mode === 'focus') ? 'square' : 'pause';
-                } else {
-                    startPauseBtn.classList.add(`bg-${modeColor}-600`, `hover:bg-${modeColor}-700`);
-                    btnIcon = 'play';
-                }
-            
-                startPauseBtn.innerHTML = `<i data-lucide="${btnIcon}" class="w-8 h-8 ${btnIcon === 'play' ? 'pl-1' : ''}"></i>`;
-            
+                updateTimerDisplay();
+                const task = tasks[focusMethod].find(t => t.id === selectedTaskId);
+                currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
+                startPauseBtn.innerHTML = `<i data-lucide="${isRunning ? 'pause' : 'play'}" class="w-8 h-8 ${!isRunning ? 'pl-1' : ''}"></i>`;
                 lucide.createIcons();
             };
 
-            const formatTime = (totalSeconds) => {
-                if (!totalSeconds || totalSeconds < 1) return `0m`;
-                const minutes = Math.floor(totalSeconds / 60);
-                const hours = Math.floor(minutes / 60);
-                const remainingMinutes = minutes % 60;
-                if (hours > 0) return `${hours}h ${remainingMinutes}m`;
-                return `${minutes}m`;
-            };
-
-            const updateStatsDisplay = () => {
-                const currentTasks = tasks[focusMethod];
-                if (currentTasks.length === 0) {
-                    statsContentEl.innerHTML = '<p class="text-gray-400 text-center">Nenhuma tarefa para exibir.</p>';
-                    return;
-                }
-                let statsHTML = '<div class="space-y-3">';
-                const sortedTasks = [...currentTasks].sort((a, b) => a.completed - b.completed);
-
-                sortedTasks.forEach(task => {
-                    statsHTML += `
-                        <div class="bg-gray-900 p-3 rounded-lg ${task.completed ? 'opacity-60' : ''}">
-                            <p class="font-bold text-white truncate ${task.completed ? 'line-through' : ''}">${task.name}</p>
-                            <div class="grid ${focusMethod === 'pomodoro' ? 'grid-cols-4' : 'grid-cols-3'} gap-2 mt-2 text-center text-sm">
-                                <div>
-                                    <p class="text-xs text-gray-400">Foco</p>
-                                    <p class="font-semibold">${formatTime(task.focusTime)}</p>
-                                </div>
-                                ${focusMethod === 'pomodoro' ? `
-                                <div>
-                                    <p class="text-xs text-gray-400">Ciclos</p>
-                                    <p class="font-semibold">${task.pomodorosCompleted}/${task.pomodoroEstimate}</p>
-                                </div>` : ''}
-                                <div>
-                                    <p class="text-xs text-gray-400">Int. Interna</p>
-                                    <p class="font-semibold">${task.internalInterruptions}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-gray-400">Int. Externa</p>
-                                    <p class="font-semibold">${task.externalInterruptions}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                statsHTML += '</div>';
-                statsContentEl.innerHTML = statsHTML;
-            };
-            
             const renderTasks = () => {
                 const currentTasks = tasks[focusMethod] || [];
                 const visibleTasks = currentTasks.filter(task => !task.completed);
-                
-                taskListEl.innerHTML = visibleTasks.length === 0 ? '<p class="text-gray-500 text-center text-sm">Adicione a sua primeira tarefa!</p>' : '';
-                
+                taskListEl.innerHTML = '';
                 visibleTasks.forEach(task => {
                     const taskEl = document.createElement('div');
                     taskEl.className = `task-item bg-gray-900 p-3 rounded-lg border-2 border-transparent cursor-pointer ${task.id === selectedTaskId ? 'selected' : ''}`;
                     taskEl.dataset.id = task.id;
-                    
                     const isEditing = task.isEditing === true;
-                    
-                    const pomodoroDetails = `
-                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Pomodoros">
-                            <i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>
-                            ${task.pomodorosCompleted}/${task.pomodoroEstimate}
-                        </span>`;
-
-                    const commonDetails = `
-                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Tempo de Foco Total">
-                            <i data-lucide="clock" class="w-4 h-4 mr-1 text-blue-400"></i>
-                            ${formatTime(task.focusTime)}
-                        </span>
-                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Interrupções Internas">
-                            <i data-lucide="zap-off" class="w-4 h-4 mr-1 text-gray-400"></i>
-                            ${task.internalInterruptions}
-                        </span>
-                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Interrupções Externas">
-                            <i data-lucide="user-x" class="w-4 h-4 mr-1 text-gray-400"></i>
-                            ${task.externalInterruptions}
-                        </span>`;
-
                     taskEl.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div class="flex items-center min-w-0 flex-grow">
-                                <button data-action="complete" data-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-3 flex-shrink-0"><i data-lucide="square" class="w-5 h-5"></i></button>
+                                <button data-action="complete" class="complete-btn text-gray-400 hover:text-green-500 mr-3 flex-shrink-0"><i data-lucide="square" class="w-5 h-5"></i></button>
                                 ${isEditing 
-                                    ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none" data-id="${task.id}">`
+                                    ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none">`
                                     : `<span class="task-name truncate text-sm">${task.name}</span>`
                                 }
                             </div>
                             <div class="flex items-center space-x-1 flex-shrink-0">
-                                <button data-action="edit" data-id="${task.id}" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md"><i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i></button>
-                                <button data-action="delete" data-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-1 rounded-md"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                <button data-action="edit" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md"><i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i></button>
+                                <button data-action="delete" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-1 rounded-md"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
-                        </div>
-                        <div class="grid ${focusMethod === 'pomodoro' ? 'grid-cols-4' : 'grid-cols-3'} gap-1 items-center mt-2 pl-8 text-xs text-center">
-                            ${focusMethod === 'pomodoro' ? pomodoroDetails : ''}
-                            ${commonDetails}
                         </div>`;
-                    
                     taskListEl.appendChild(taskEl);
                 });
-
-                updateCurrentTaskDisplay();
-                updateStatsDisplay();
-                saveState();
+                updateUI();
                 lucide.createIcons();
+            };
+
+            const selectTask = (id) => {
+                const isAnyTaskEditing = tasks[focusMethod].some(t => t.isEditing === true);
+                if (isAnyTaskEditing) return;
+                selectedTaskId = id;
+                if (!isRunning) {
+                    resetTimer('focus');
+                }
+                renderTasks();
             };
 
             const addTask = () => {
                 const taskName = newTaskInput.value.trim();
                 if (!taskName) return;
-
-                const estimate = parseInt(newTaskEstimateInput.value) || 1;
-                
-                const newTask = { 
-                    id: Date.now(), 
-                    name: taskName, 
-                    pomodoroEstimate: focusMethod === 'pomodoro' ? estimate : 0,
-                    pomodorosCompleted: 0, 
-                    internalInterruptions: 0, 
-                    externalInterruptions: 0, 
-                    focusTime: 0, 
-                    completed: false,
-                    isEditing: false
-                };
-                
+                const newTask = { id: Date.now(), name: taskName, completed: false, isEditing: false };
                 tasks[focusMethod].push(newTask);
                 newTaskInput.value = '';
-                newTaskEstimateInput.value = '1';
-
-                const previousSelectedTask = tasks[focusMethod].find(t => t.id === selectedTaskId);
-                if (!selectedTaskId || (previousSelectedTask && previousSelectedTask.completed)) {
+                if (!selectedTaskId || tasks[focusMethod].find(t => t.id === selectedTaskId)?.completed) {
                     selectTask(newTask.id);
                 } else {
                     renderTasks();
                 }
             };
-
-            const deleteTask = (id) => {
-                tasks[focusMethod] = tasks[focusMethod].filter(task => task.id !== id);
-                if (selectedTaskId === id) {
-                    const firstIncompleteTask = tasks[focusMethod].find(t => !t.completed);
-                    selectedTaskId = firstIncompleteTask ? firstIncompleteTask.id : null;
-                    if (!isRunning) resetTimer('focus');
+            
+            const handleTaskActions = (e) => {
+                const targetButton = e.target.closest('button');
+                if (!targetButton) {
+                    const taskItem = e.target.closest('.task-item');
+                    if (taskItem) {
+                        selectTask(parseInt(taskItem.dataset.id));
+                    }
+                    return;
                 }
-                renderTasks();
-            };
 
-            const toggleTaskCompleted = (id) => {
+                const action = targetButton.dataset.action;
+                const taskItem = targetButton.closest('.task-item');
+                const id = parseInt(taskItem.dataset.id);
                 const task = tasks[focusMethod].find(t => t.id === id);
-                if (task) {
+
+                if (!task) return;
+
+                if (action === 'complete') {
                     task.completed = true;
-                    if (task.completed && selectedTaskId === id) {
-                        if(isRunning && mode === 'focus') pauseTimer();
-                        const firstIncompleteTask = tasks[focusMethod].find(t => !t.completed);
-                        selectTask(firstIncompleteTask ? firstIncompleteTask.id : null);
+                    if (id === selectedTaskId) {
+                        selectedTaskId = null;
+                        const firstIncomplete = tasks[focusMethod].find(t => !t.completed);
+                        if (firstIncomplete) selectTask(firstIncomplete.id);
                     }
                     renderTasks();
-                }
-            };
-            
-            const toggleEditState = (id) => {
-                tasks[focusMethod].forEach(task => {
-                    task.isEditing = (task.id === id);
-                });
-                renderTasks();
-                const input = document.querySelector(`.task-edit-input[data-id="${id}"]`);
-                if (input) {
-                    input.focus();
-                    input.select();
-                }
-            };
-
-            const updateTaskName = (id, newName) => {
-                const task = tasks[focusMethod].find(t => t.id === id);
-                if (task) {
-                    if (newName.trim() !== '') {
-                        task.name = newName;
-                    }
-                    task.isEditing = false;
-                    renderTasks();
-                }
-            };
-
-            const selectTask = (id) => {
-                const task = tasks[focusMethod].find(t => t.id === id);
-                const isAnyTaskEditing = tasks[focusMethod].some(t => t.isEditing === true);
-
-                if (task && !isAnyTaskEditing) {
-                    selectedTaskId = id;
-                    if (!isRunning) {
-                        resetTimer('focus');
+                } else if (action === 'delete') {
+                    tasks[focusMethod] = tasks[focusMethod].filter(t => t.id !== id);
+                     if (id === selectedTaskId) {
+                        selectedTaskId = null;
+                        const firstIncomplete = tasks[focusMethod].find(t => !t.completed);
+                        if (firstIncomplete) selectTask(firstIncomplete.id);
                     }
                     renderTasks();
-                }
-            };
-
-            const logInterruption = (type) => {
-                if (isRunning && mode === 'focus' && selectedTaskId) {
-                    const task = tasks[focusMethod].find(t => t.id === selectedTaskId);
-                    if (task) {
-                        if (type === 'internal') task.internalInterruptions++;
-                        else if (type === 'external') task.externalInterruptions++;
-                        renderTasks();
-                    }
-                } else {
-                    showModal(alertModalOverlay, 'Só pode registrar uma interrupção durante um ciclo de foco ativo.');
-                }
-            };
-            
-            const updateCurrentTaskDisplay = () => {
-                const task = tasks[focusMethod].find(t => t.id === selectedTaskId);
-                currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
-                
-                if (focusMethod === 'pomodoro') {
-                    pomodoroCyclesEl.innerHTML = '';
-                    if (!settings.longBreakInterval || settings.longBreakInterval <= 0) return;
-                    const cyclesToShow = pomodoroSessionCount % settings.longBreakInterval;
-                    for(let i = 0; i < settings.longBreakInterval; i++) {
-                        const icon = i < cyclesToShow ? '<i data-lucide="check-circle-2" class="text-green-500"></i>' : '<i data-lucide="circle" class="text-gray-600"></i>';
-                        pomodoroCyclesEl.innerHTML += `<span class="transition-all">${icon}</span>`;
-                    }
-                    lucide.createIcons();
-                }
-            };
-
-            const saveState = () => {
-                const state = { 
-                    settings, 
-                    tasks, 
-                    selectedTaskId, 
-                    pomodoroSessionCount, 
-                    focusMethod,
-                    timerState: {
-                        isRunning,
-                        mode,
-                        timeRemaining,
-                        startTime,
-                        endTime
-                    }
-                };
-                localStorage.setItem('pomodoroCoreState', JSON.stringify(state));
-            };
-
-            const loadState = () => {
-                const state = JSON.parse(localStorage.getItem('pomodoroCoreState'));
-                if (state) {
-                    settings = { ...settings, ...state.settings };
-                    if (Array.isArray(state.tasks)) {
-                        tasks = { pomodoro: state.tasks, adaptativo: [] };
-                    } else {
-                        tasks = state.tasks || { pomodoro: [], adaptativo: [] };
-                    }
-                    
-                    selectedTaskId = state.selectedTaskId;
-                    pomodoroSessionCount = state.pomodoroSessionCount || 0;
-                    focusMethod = state.focusMethod || 'pomodoro';
-
-                    if (state.timerState && state.timerState.isRunning) {
-                        const { mode: savedMode, timeRemaining: savedTime, startTime: savedStartTime, endTime: savedEndTime } = state.timerState;
-                        
-                        const isPomodoroMode = focusMethod === 'pomodoro' || savedMode !== 'focus';
-
-                        if (isPomodoroMode && savedEndTime) {
-                            const remaining = Math.round((savedEndTime - Date.now()) / 1000);
-                            if (remaining > 0) {
-                                timeRemaining = remaining;
-                                mode = savedMode;
-                                startTimer();
-                            }
-                        } else if (!isPomodoroMode && savedStartTime) {
-                            timeRemaining = Math.floor((Date.now() - savedStartTime) / 1000);
-                            mode = savedMode;
-                            startTimer();
+                } else if (action === 'edit') {
+                    if (task.isEditing) {
+                        const input = taskItem.querySelector('.task-edit-input');
+                        if (input.value.trim()) {
+                            task.name = input.value.trim();
                         }
+                        task.isEditing = false;
+                    } else {
+                        tasks[focusMethod].forEach(t => t.isEditing = false);
+                        task.isEditing = true;
                     }
-                }
-                
-                focusDurationInput.value = settings.focusDuration;
-                shortBreakDurationInput.value = settings.shortBreakDuration;
-                longBreakDurationInput.value = settings.longBreakDuration;
-                longBreakIntervalInput.value = settings.longBreakInterval;
-
-                const currentTasks = tasks[focusMethod] || [];
-                if (selectedTaskId) {
-                    const task = currentTasks.find(t => t.id === selectedTaskId);
-                    if (!task || task.completed) selectedTaskId = null;
-                }
-                if (!selectedTaskId) {
-                    const firstIncompleteTask = currentTasks.find(t => !t.completed);
-                    if (firstIncompleteTask) selectedTaskId = firstIncompleteTask.id;
+                    renderTasks();
                 }
             };
-            
-            // --- EVENT LISTENERS ---
-            startPauseBtn.addEventListener('click', () => {
-                if (isRunning) {
-                    pauseTimer();
-                    if (focusMethod === 'adaptativo' && mode === 'focus') {
-                        const task = tasks.adaptativo.find(t => t.id === selectedTaskId);
-                        if (task) task.focusTime = timeRemaining;
-                        showModal(sessionEndModalOverlay, `Você se concentrou por ${formatTime(timeRemaining)}.`);
-                        resetTimer('focus');
-                    }
-                } else {
-                    startTimer();
-                }
-            });
 
-            resetBtn.addEventListener('click', () => showModal(resetConfirmModalOverlay));
-            resetConfirmBtn.addEventListener('click', resetDay);
-            resetCancelBtn.addEventListener('click', () => hideModal(resetConfirmModalOverlay));
-            internalInterruptBtn.addEventListener('click', () => logInterruption('internal'));
-            externalInterruptBtn.addEventListener('click', () => logInterruption('external'));
+            // --- EVENT LISTENERS ---
+            startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
+            addTaskBtn.addEventListener('click', addTask);
+            newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
+            taskListEl.addEventListener('click', handleTaskActions);
             settingsBtn.addEventListener('click', () => showModal(settingsModalOverlay));
-            statsBtn.addEventListener('click', () => showModal(statsModalOverlay));
-            helpBtn.addEventListener('click', () => showModal(helpModalOverlay));
-            statsModalCloseBtn.addEventListener('click', () => hideModal(statsModalOverlay));
-            helpModalCloseBtn.addEventListener('click', () => hideModal(helpModalOverlay));
-            alertModalCloseBtn.addEventListener('click', () => hideModal(alertModalOverlay));
-            sessionEndCloseBtn.addEventListener('click', () => hideModal(sessionEndModalOverlay));
             settingsSaveBtn.addEventListener('click', () => {
                 settings.focusDuration = parseInt(focusDurationInput.value) || 25;
                 settings.shortBreakDuration = parseInt(shortBreakDurationInput.value) || 5;
                 settings.longBreakDuration = parseInt(longBreakDurationInput.value) || 15;
                 settings.longBreakInterval = parseInt(longBreakIntervalInput.value) || 4;
                 hideModal(settingsModalOverlay);
-                if (!isRunning) resetTimer('focus');
+                if (!isRunning) resetTimer(mode);
             });
-            addTaskBtn.addEventListener('click', addTask);
-            newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
-            focusMethodToggle.addEventListener('click', (e) => {
-                const target = e.target.closest('.method-btn');
-                if (target && !isRunning) {
-                    focusMethod = target.dataset.method;
-                    updateMethodToggleUI();
-                    saveState();
-                } else if (isRunning) {
-                    showModal(alertModalOverlay, 'Não é possível trocar de modo enquanto o timer está rodando.');
-                }
-            });
-
-            [alertModalOverlay, settingsModalOverlay, statsModalOverlay, helpModalOverlay, resetConfirmModalOverlay, sessionEndModalOverlay].forEach(overlay => {
-                overlay.addEventListener('click', (e) => { if (e.target === overlay) hideModal(overlay); });
-            });
+            alertModalCloseBtn.addEventListener('click', () => hideModal(alertModalOverlay));
             
-            taskListEl.addEventListener('click', (e) => {
-                const target = e.target.closest('button');
-                if (!target) {
-                    const taskItem = e.target.closest('.task-item');
-                    if(taskItem) selectTask(parseInt(taskItem.dataset.id));
-                    return;
-                }
-
-                const action = target.dataset.action;
-                const id = parseInt(target.dataset.id);
-
-                if (action === 'complete') {
-                    toggleTaskCompleted(id);
-                } else if (action === 'delete') {
-                    deleteTask(id);
-                } else if (action === 'edit') {
-                    const task = tasks[focusMethod].find(t => t.id === id);
-                    if (task && task.isEditing) {
-                        const input = taskListEl.querySelector(`.task-edit-input[data-id="${id}"]`);
-                        if (input) updateTaskName(id, input.value.trim());
-                    } else {
-                        toggleEditState(id);
-                    }
-                }
-            });
-
-            taskListEl.addEventListener('keyup', (e) => {
-                if (e.target.matches('.task-edit-input')) {
-                    const id = parseInt(e.target.dataset.id);
-                    if (e.key === 'Enter') {
-                        updateTaskName(id, e.target.value.trim());
-                    } else if (e.key === 'Escape') {
-                        toggleEditState(null); // Exit edit mode for all
-                    }
-                }
-            });
-
-            taskListEl.addEventListener('focusout', (e) => {
-                if (e.target.matches('.task-edit-input')) {
-                    const id = parseInt(e.target.dataset.id);
-                    // Use a small timeout to prevent race conditions with the save button click
-                    setTimeout(() => {
-                        const task = tasks[focusMethod].find(t => t.id === id);
-                        // Check if the task is still in editing mode before saving
-                        if (task && task.isEditing) {
-                           updateTaskName(id, e.target.value.trim());
-                        }
-                    }, 200);
-                }
-            });
-
-            // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-            notificationToggle.addEventListener('change', handleNotificationToggleChange);
-
-            loadState();
-            updateMethodToggleUI();
-            if (!isRunning) {
-                resetTimer(mode);
-            }
-            updateNotificationUI();
-            lucide.createIcons();
+            // --- INITIALIZATION ---
+            resetTimer('focus');
         });
     </script>
 </body>

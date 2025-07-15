@@ -1,32 +1,21 @@
 {
-    "name": "Foco Total Core",
-    "short_name": "Foco Core",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#1F2937",
-    "theme_color": "#1F2937",
-    "description": "Um timer Pomodoro e de Foco Adaptativo para máxima produtividade.",
-    "icons": [
-        {
-            "src": "icon-180x180.png",
-            "type": "image/png",
-            "sizes": "180x180"
-        },
-        {
-            "src": "icon-192x192.png",
-            "type": "image/png",
-            "sizes": "192x192"
-        },
-        {
-            "src": "icon-512x512.png",
-            "type": "image/png",
-            "sizes": "512x512"
-        },
-        {
-            "src": "icon-512x512.png",
-            "type": "image/png",
-            "sizes": "512x512",
-            "purpose": "maskable"
-        }
-    ]
+  "name": "Foco Total",
+  "short_name": "Foco Total",
+  "description": "Um temporizador Pomodoro e de foco adaptativo para máxima produtividade.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#1F2937",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
 }
