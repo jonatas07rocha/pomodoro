@@ -185,13 +185,13 @@
                     <input type="number" id="long-break-interval" class="mt-1 w-full bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="4">
                </div>
             </div>
-            <!-- NOTIFICATIONS SECTION - LOGIC IS TEMPORARILY DISABLED -->
+            <!-- NOTIFICATIONS SECTION - RE-ENABLED -->
             <div class="mb-4">
                 <h3 class="text-base font-semibold text-blue-400 mb-3">Notificações</h3>
                 <div class="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-                    <span id="notification-status" class="text-sm text-gray-300">Desativado nesta versão</span>
+                    <span id="notification-status" class="text-sm text-gray-300"></span>
                     <label class="switch">
-                        <input type="checkbox" id="notification-toggle" disabled>
+                        <input type="checkbox" id="notification-toggle">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -229,6 +229,15 @@
     </div>
     
     <script>
+        // --- SERVICE WORKER REGISTRATION ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('Service worker registered.', reg))
+                    .catch(err => console.error('Service worker registration failed:', err));
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM ELEMENTS ---
             const timerDisplay = document.getElementById('timer-display');
@@ -256,7 +265,8 @@
             const helpModalCloseBtn = document.getElementById('help-modal-close-btn');
             const helpContentPomodoro = document.getElementById('help-content-pomodoro');
             const helpContentAdaptativo = document.getElementById('help-content-adaptativo');
-
+            const notificationToggle = document.getElementById('notification-toggle');
+            const notificationStatus = document.getElementById('notification-status');
 
             // --- APP STATE ---
             let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime, startTime;
@@ -264,8 +274,117 @@
             let selectedTaskId = null, pomodoroSessionCount = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
             let focusMethod = 'pomodoro';
+            const VAPID_PUBLIC_KEY = 'BPkpKRNSvYRV4rBnQDN4uTv0S0D2yP4zTn1Ahlgki-Vm87wU6U1NqY21DHuqJTmcmuQN7cJvcNrNNXjDN46szN_Iw';
 
-            // --- FUNCTIONS ---
+            // --- NOTIFICATION FUNCTIONS ---
+            const urlBase64ToUint8Array = (base64String) => {
+                const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                const rawData = window.atob(base64);
+                const outputArray = new Uint8Array(rawData.length);
+                for (let i = 0; i < rawData.length; ++i) {
+                    outputArray[i] = rawData.charCodeAt(i);
+                }
+                return outputArray;
+            };
+
+            async function updateNotificationUI() {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                    notificationStatus.textContent = 'Não suportado';
+                    notificationToggle.disabled = true;
+                    return;
+                }
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                const permission = Notification.permission;
+
+                if (permission === 'denied') {
+                    notificationStatus.textContent = 'Permissão bloqueada';
+                    notificationToggle.checked = false;
+                    notificationToggle.disabled = true;
+                } else if (subscription) {
+                    notificationStatus.textContent = 'Notificações Ativadas';
+                    notificationToggle.checked = true;
+                    notificationToggle.disabled = false;
+                } else {
+                    notificationStatus.textContent = 'Notificações Desativadas';
+                    notificationToggle.checked = false;
+                    notificationToggle.disabled = false;
+                }
+            }
+            
+            async function triggerWelcomeNotification(subscription) {
+                try {
+                    await fetch('/api/enviar-notificacao', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            subscription: subscription,
+                            payload: {
+                                title: 'Bem-vindo(a) ao Foco Total! 🎉',
+                                body: 'As notificações estão ativadas e prontas!'
+                            }
+                        }),
+                    });
+                } catch (error) {
+                    console.error('Erro ao disparar a notificação de boas-vindas:', error);
+                }
+            }
+            
+            async function triggerEndOfSessionNotification() {
+                 const registration = await navigator.serviceWorker.ready;
+                 const subscription = await registration.pushManager.getSubscription();
+                 if (!subscription) return;
+                 
+                 try {
+                    await fetch('/api/enviar-notificacao', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subscription: subscription }),
+                    });
+                } catch (error) {
+                    console.error('Erro ao disparar a notificação de fim de sessão:', error);
+                }
+            }
+
+            async function subscribeUserToPush() {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                    await triggerWelcomeNotification(subscription);
+                } catch (err) {
+                    console.error('Falha ao inscrever o utilizador: ', err);
+                } finally {
+                    updateNotificationUI();
+                }
+            }
+
+            async function unsubscribeUser() {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                if (subscription) {
+                    await subscription.unsubscribe();
+                }
+                updateNotificationUI();
+            }
+
+            async function handleNotificationToggleChange() {
+                if (this.checked) {
+                    const permission = await Notification.requestPermission();
+                    if (permission === 'granted') {
+                        await subscribeUserToPush();
+                    } else {
+                        updateNotificationUI();
+                    }
+                } else {
+                    await unsubscribeUser();
+                }
+            }
+
+            // --- CORE FUNCTIONS ---
             const showModal = (modalOverlay, message) => {
                 const messageEl = modalOverlay.querySelector('p');
                 if(messageEl && message) messageEl.textContent = message;
@@ -292,6 +411,27 @@
                 timerDisplay.textContent = display;
                 document.title = `${display} - Foco Total`;
             };
+            
+            const switchMode = () => {
+                isRunning = false;
+                
+                if (mode === 'focus' && focusMethod === 'pomodoro') {
+                    triggerEndOfSessionNotification();
+                    pomodoroSessionCount++;
+                    const task = tasks.pomodoro.find(t => t.id === selectedTaskId);
+                    if(task) {
+                        task.pomodorosCompleted++;
+                        task.focusTime += totalTime;
+                    }
+                }
+
+                if (mode === 'focus') {
+                    mode = (focusMethod === 'pomodoro' && pomodoroSessionCount % settings.longBreakInterval === 0) ? 'longBreak' : 'shortBreak';
+                } else {
+                    mode = 'focus';
+                }
+                resetTimer();
+            };
 
             const startTimer = () => {
                 if (isRunning) return;
@@ -309,11 +449,10 @@
                             updateTimerDisplay();
                         } else {
                             clearInterval(timerInterval);
-                            isRunning = false;
-                            // Notification logic will be re-added here in Phase 2
+                            switchMode();
                         }
                     }, 1000);
-                } else { // Adaptativo
+                } else {
                     startTime = Date.now() - (timeRemaining * 1000);
                      timerInterval = setInterval(() => {
                         timeRemaining = Math.floor((Date.now() - startTime) / 1000);
@@ -341,9 +480,9 @@
                 mode = forceMode || mode;
 
                 if (focusMethod === 'pomodoro' || mode !== 'focus') {
-                    timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
+                    timeRemaining = (mode === 'focus' ? settings.focusDuration : (mode === 'shortBreak' ? settings.shortBreakDuration : settings.longBreakDuration)) * 60;
                     totalTime = timeRemaining;
-                } else { // Adaptativo
+                } else {
                     timeRemaining = 0;
                     totalTime = 0;
                 }
@@ -568,10 +707,13 @@
                     showModal(alertModalOverlay, 'Não é possível trocar de modo enquanto o timer está rodando.');
                 }
             });
+            notificationToggle.addEventListener('change', handleNotificationToggleChange);
+
 
             // --- INITIALIZATION ---
             updateMethodToggleUI();
             resetTimer('focus');
+            updateNotificationUI();
         });
     </script>
 </body>

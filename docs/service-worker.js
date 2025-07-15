@@ -1,4 +1,4 @@
-const CACHE_NAME = 'foco-total-core-v1.6'; // Versão incrementada para forçar a atualização
+const CACHE_NAME = 'foco-total-v1.7'; // Nova versão para forçar atualização
 
 const urlsToCache = [
     './',
@@ -36,7 +36,6 @@ self.addEventListener('activate', event => {
     );
 });
 
-// ### CORREÇÃO APLICADA AQUI ###
 self.addEventListener('fetch', event => {
     // Ignora requisições que não são para recursos web (como as de extensões do Chrome)
     if (!event.request.url.startsWith('http')) {
