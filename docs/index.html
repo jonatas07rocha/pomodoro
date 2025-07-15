@@ -541,6 +541,7 @@
                 }
             }
 
+            // ### ALTERAÇÃO 1: Notificação de boas-vindas é chamada aqui ###
             async function subscribeUserToPush() {
                 try {
                     const registration = await navigator.serviceWorker.ready;
@@ -551,6 +552,10 @@
                     
                     console.log('Inscrição Push recebida: ', JSON.stringify(subscription));
                     saveSubscriptionLocally(subscription);
+                    
+                    // Dispara a notificação de boas-vindas imediatamente após a inscrição
+                    await triggerWelcomeNotification(subscription);
+
                 } catch (err) {
                     console.error('Falha ao inscrever o utilizador: ', err);
                     showModal(alertModalOverlay, 'Falha ao ativar notificações. Por favor, tente novamente.');
@@ -593,6 +598,34 @@
                 console.log('Inscrição salva localmente.');
             };
 
+            // ### ALTERAÇÃO 2: Nova função para a notificação de boas-vindas ###
+            async function triggerWelcomeNotification(subscription) {
+                if (!subscription) {
+                    console.log('Nenhuma inscrição para a notificação de boas-vindas.');
+                    return;
+                }
+                try {
+                    console.log('Enviando notificação de boas-vindas para o backend...');
+                    const response = await fetch('/api/enviar-notificacao', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            subscription: subscription,
+                            payload: {
+                                title: 'Bem-vindo(a) ao Foco Total! 🎉',
+                                body: 'As notificações estão ativadas e prontas!'
+                            }
+                        }),
+                    });
+                    if (!response.ok) {
+                       const errorBody = await response.json();
+                       console.error('Erro do servidor na notificação de boas-vindas:', errorBody);
+                    }
+                } catch (error) {
+                    console.error('Erro ao disparar a notificação de boas-vindas:', error);
+                }
+            }
+
             async function triggerPushNotification() {
                 const subscriptionString = localStorage.getItem('pushSubscription');
                 if (!subscriptionString) {
@@ -609,7 +642,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ subscription: subscription }),
+                        body: JSON.stringify({ subscription: subscription }), // Envia sem payload customizado, para usar o padrão
                     });
 
                     if (!response.ok) {
@@ -716,18 +749,12 @@
                 }
             };
 
-            // ############# LÓGICA CENTRAL CORRIGIDA #############
             const switchMode = () => {
                 isRunning = false;
 
-                // --- BLOCO DE NOTIFICAÇÃO CORRIGIDO E MELHORADO ---
-                // Este bloco é executado sempre que um ciclo termina.
                 if (mode === 'focus' && focusMethod === 'pomodoro') {
-                    // 1. Tenta enviar uma notificação PUSH (para Desktop/Android com app fechado)
                     triggerPushNotification();
 
-                    // 2. Mostra uma notificação LOCAL (para iOS e como fallback/alerta imediato)
-                    // Isso garante que o usuário veja algo mesmo com a aba aberta.
                     if ('Notification' in window && Notification.permission === 'granted') {
                         try {
                             const notificationBody = (pomodoroSessionCount + 1) % settings.longBreakInterval === 0
@@ -737,16 +764,14 @@
                             new Notification('Foco Total ⏰', {
                                 body: notificationBody,
                                 icon: 'icon-192x192.png',
-                                tag: 'foco-total-session-end' // Evita notificações duplicadas
+                                tag: 'foco-total-session-end'
                             });
                         } catch (e) {
                             console.error("Erro ao criar notificação local:", e);
                         }
                     }
                 }
-                // --- FIM DO BLOCO DE NOTIFICAÇÃO ---
 
-                // O resto da lógica para trocar de modo continua igual
                 if (mode === 'focus') {
                     if (focusMethod === 'pomodoro') {
                         pomodoroSessionCount++;
