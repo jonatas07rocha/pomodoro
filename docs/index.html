@@ -227,6 +227,25 @@
             <button id="help-modal-close-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl mt-6 transition-colors">Entendi!</button>
         </div>
     </div>
+    <div id="stats-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white">Relatório do Dia</h2>
+            </div>
+            <div id="stats-content" class="bg-gray-800 p-4 rounded-lg max-h-80 overflow-y-auto"></div>
+            <button id="stats-modal-close-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-xl mt-6 transition-colors">Fechar</button>
+        </div>
+    </div>
+    <div id="reset-confirm-modal-overlay" class="modal-overlay">
+        <div class="modal-content text-center">
+            <h2 class="text-xl font-bold text-white mb-2">Zerar o Dia?</h2>
+            <p id="reset-confirm-message" class="mb-6 text-gray-300">Todas as tarefas e o progresso serão apagados. As configurações e o modo de foco serão mantidos. Deseja continuar?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="reset-cancel-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Cancelar</button>
+                <button id="reset-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Sim, Zerar</button>
+            </div>
+        </div>
+    </div>
     
     <script>
         // --- SERVICE WORKER REGISTRATION ---
@@ -267,6 +286,14 @@
             const helpContentAdaptativo = document.getElementById('help-content-adaptativo');
             const notificationToggle = document.getElementById('notification-toggle');
             const notificationStatus = document.getElementById('notification-status');
+            const resetBtn = document.getElementById('reset-btn');
+            const statsBtn = document.getElementById('stats-btn');
+            const statsModalOverlay = document.getElementById('stats-modal-overlay');
+            const statsModalCloseBtn = document.getElementById('stats-modal-close-btn');
+            const statsContentEl = document.getElementById('stats-content');
+            const resetConfirmModalOverlay = document.getElementById('reset-confirm-modal-overlay');
+            const resetConfirmBtn = document.getElementById('reset-confirm-btn');
+            const resetCancelBtn = document.getElementById('reset-cancel-btn');
 
             // --- APP STATE ---
             let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime, startTime;
@@ -274,19 +301,14 @@
             let selectedTaskId = null, pomodoroSessionCount = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
             let focusMethod = 'pomodoro';
-            const VAPID_PUBLIC_KEY = 'BIboLKq70hl9OlhXyAuZk4p3PtJBP-3b-UgtAW6QSv1Xw6_Wyy2vzY-o5H_UrS7xFmr8lGCG1Wjff7HKKReb3UU';
+            const VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY'; // Replace with your actual key
 
             // --- NOTIFICATION FUNCTIONS ---
-            const urlBase64ToUint8Array = (base64String) => {
-                const padding = '='.repeat((4 - base64String.length % 4) % 4);
-                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-                const rawData = window.atob(base64);
-                const outputArray = new Uint8Array(rawData.length);
-                for (let i = 0; i < rawData.length; ++i) {
-                    outputArray[i] = rawData.charCodeAt(i);
+            function postMessageToSW(message) {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage(message);
                 }
-                return outputArray;
-            };
+            }
 
             async function updateNotificationUI() {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -312,49 +334,15 @@
                     notificationToggle.disabled = false;
                 }
             }
-            
-            async function triggerWelcomeNotification(subscription) {
-                try {
-                    await fetch('/api/enviar-notificacao', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            subscription: subscription,
-                            payload: {
-                                title: 'Bem-vindo(a) ao Foco Total! 🎉',
-                                body: 'As notificações estão ativadas e prontas!'
-                            }
-                        }),
-                    });
-                } catch (error) {
-                    console.error('Erro ao disparar a notificação de boas-vindas:', error);
-                }
-            }
-            
-            async function triggerEndOfSessionNotification() {
-                 const registration = await navigator.serviceWorker.ready;
-                 const subscription = await registration.pushManager.getSubscription();
-                 if (!subscription) return;
-                 
-                 try {
-                    await fetch('/api/enviar-notificacao', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ subscription: subscription }),
-                    });
-                } catch (error) {
-                    console.error('Erro ao disparar a notificação de fim de sessão:', error);
-                }
-            }
 
             async function subscribeUserToPush() {
                 try {
                     const registration = await navigator.serviceWorker.ready;
                     const subscription = await registration.pushManager.subscribe({
                         userVisibleOnly: true,
-                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                        applicationServerKey: VAPID_PUBLIC_KEY
                     });
-                    await triggerWelcomeNotification(subscription);
+                    // Welcome notification logic can be re-added if needed
                 } catch (err) {
                     console.error('Falha ao inscrever o utilizador: ', err);
                 } finally {
@@ -416,7 +404,6 @@
                 isRunning = false;
                 
                 if (mode === 'focus' && focusMethod === 'pomodoro') {
-                    triggerEndOfSessionNotification();
                     pomodoroSessionCount++;
                     const task = tasks.pomodoro.find(t => t.id === selectedTaskId);
                     if(task) {
@@ -442,6 +429,11 @@
                 isRunning = true;
                 if (focusMethod === 'pomodoro' || mode !== 'focus') {
                     const endTime = Date.now() + timeRemaining * 1000;
+                    
+                    if (mode === 'focus') {
+                        postMessageToSW({ type: 'SCHEDULE_NOTIFICATION', duration: timeRemaining * 1000 });
+                    }
+
                     timerInterval = setInterval(() => {
                         const remaining = Math.round((endTime - Date.now()) / 1000);
                         if (remaining >= 0) {
@@ -466,6 +458,7 @@
                 if (!isRunning) return;
                 isRunning = false;
                 clearInterval(timerInterval);
+                postMessageToSW({ type: 'CANCEL_NOTIFICATION' });
                 if(focusMethod === 'adaptativo' && mode === 'focus') {
                     const task = tasks.adaptativo.find(t => t.id === selectedTaskId);
                     if (task) task.focusTime = timeRemaining;
@@ -477,6 +470,7 @@
             const resetTimer = (forceMode = null) => {
                 clearInterval(timerInterval);
                 isRunning = false;
+                postMessageToSW({ type: 'CANCEL_NOTIFICATION' });
                 mode = forceMode || mode;
 
                 if (focusMethod === 'pomodoro' || mode !== 'focus') {
@@ -487,6 +481,18 @@
                     totalTime = 0;
                 }
                 updateUI();
+            };
+            
+            const resetDay = () => {
+                pauseTimer();
+                tasks[focusMethod] = [];
+                selectedTaskId = null;
+                if (focusMethod === 'pomodoro') {
+                    pomodoroSessionCount = 0;
+                }
+                resetTimer('focus');
+                renderTasks();
+                hideModal(resetConfirmModalOverlay);
             };
 
             const updateCurrentTaskDisplay = () => {
@@ -679,6 +685,45 @@
                 }
                 renderTasks(); 
             };
+            
+            const updateStatsDisplay = () => {
+                const currentTasks = tasks[focusMethod];
+                if (currentTasks.length === 0) {
+                    statsContentEl.innerHTML = '<p class="text-gray-400 text-center">Nenhuma tarefa para exibir.</p>';
+                    return;
+                }
+                let statsHTML = '<div class="space-y-3">';
+                const sortedTasks = [...currentTasks].sort((a, b) => a.completed - b.completed);
+
+                sortedTasks.forEach(task => {
+                    statsHTML += `
+                        <div class="bg-gray-900 p-3 rounded-lg ${task.completed ? 'opacity-60' : ''}">
+                            <p class="font-bold text-white truncate ${task.completed ? 'line-through' : ''}">${task.name}</p>
+                            <div class="grid ${focusMethod === 'pomodoro' ? 'grid-cols-4' : 'grid-cols-3'} gap-2 mt-2 text-center text-sm">
+                                <div>
+                                    <p class="text-xs text-gray-400">Foco</p>
+                                    <p class="font-semibold">${formatTime(task.focusTime)}</p>
+                                </div>
+                                ${focusMethod === 'pomodoro' ? `
+                                <div>
+                                    <p class="text-xs text-gray-400">Ciclos</p>
+                                    <p class="font-semibold">${task.pomodorosCompleted}/${task.pomodoroEstimate}</p>
+                                </div>` : ''}
+                                <div>
+                                    <p class="text-xs text-gray-400">Int. Interna</p>
+                                    <p class="font-semibold">${task.internalInterruptions}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-400">Int. Externa</p>
+                                    <p class="font-semibold">${task.externalInterruptions}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                statsHTML += '</div>';
+                statsContentEl.innerHTML = statsHTML;
+            };
 
             // --- EVENT LISTENERS ---
             startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
@@ -697,6 +742,14 @@
             alertModalCloseBtn.addEventListener('click', () => hideModal(alertModalOverlay));
             helpBtn.addEventListener('click', () => showModal(helpModalOverlay));
             helpModalCloseBtn.addEventListener('click', () => hideModal(helpModalOverlay));
+            statsBtn.addEventListener('click', () => {
+                updateStatsDisplay();
+                showModal(statsModalOverlay);
+            });
+            statsModalCloseBtn.addEventListener('click', () => hideModal(statsModalOverlay));
+            resetBtn.addEventListener('click', () => showModal(resetConfirmModalOverlay));
+            resetConfirmBtn.addEventListener('click', resetDay);
+            resetCancelBtn.addEventListener('click', () => hideModal(resetConfirmModalOverlay));
             
             focusMethodToggle.addEventListener('click', (e) => {
                 const target = e.target.closest('.method-btn');
