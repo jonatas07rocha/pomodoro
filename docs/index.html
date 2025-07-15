@@ -201,6 +201,32 @@
             </button>
         </div>
     </div>
+    <div id="help-modal-overlay" class="modal-overlay">
+        <div class="modal-content text-sm">
+            <h2 class="text-xl font-bold text-white mb-4 text-center">Ajuda</h2>
+            <div id="help-content-pomodoro" class="space-y-4 text-gray-300">
+                <h3 class="text-lg font-semibold text-blue-400">O que é a Técnica Pomodoro?</h3>
+                <p>É um método que usa um cronômetro para dividir o trabalho em períodos de foco intenso (geralmente 25 min), separados por pausas curtas.</p>
+                <ol class="list-decimal list-inside space-y-2 bg-gray-800 p-4 rounded-lg">
+                    <li>Escolha uma tarefa e inicie o timer.</li>
+                    <li>Trabalhe na tarefa sem interrupções.</li>
+                    <li>Ao final, faça uma pausa curta.</li>
+                    <li>Após 4 ciclos, faça uma pausa longa.</li>
+                </ol>
+            </div>
+            <div id="help-content-adaptativo" class="space-y-4 text-gray-300 hidden">
+                <h3 class="text-lg font-semibold text-blue-400">O que é o Método Adaptativo?</h3>
+                <p>É um método flexível onde você trabalha pelo tempo que conseguir se manter focado, sem um alarme para te interromper. É ideal para trabalho criativo e profundo.</p>
+                <ol class="list-decimal list-inside space-y-2 bg-gray-800 p-4 rounded-lg">
+                    <li>Escolha uma tarefa e inicie o cronômetro (ele contará para cima).</li>
+                    <li>Mergulhe na tarefa, mantendo o foco.</li>
+                    <li>Quando sentir que sua concentração está diminuindo, pare o cronômetro.</li>
+                    <li>Faça uma pausa e analise por quanto tempo conseguiu focar.</li>
+                </ol>
+            </div>
+            <button id="help-modal-close-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl mt-6 transition-colors">Entendi!</button>
+        </div>
+    </div>
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -224,10 +250,16 @@
             const taskEstimateContainer = document.getElementById('task-estimate-container');
             const internalInterruptBtn = document.getElementById('internal-interrupt-btn');
             const externalInterruptBtn = document.getElementById('external-interrupt-btn');
+            const focusMethodToggle = document.getElementById('focus-method-toggle');
+            const helpBtn = document.getElementById('help-btn');
+            const helpModalOverlay = document.getElementById('help-modal-overlay');
+            const helpModalCloseBtn = document.getElementById('help-modal-close-btn');
+            const helpContentPomodoro = document.getElementById('help-content-pomodoro');
+            const helpContentAdaptativo = document.getElementById('help-content-adaptativo');
 
 
             // --- APP STATE ---
-            let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime;
+            let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime, startTime;
             let tasks = { pomodoro: [], adaptativo: [] };
             let selectedTaskId = null, pomodoroSessionCount = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
@@ -268,18 +300,26 @@
                     return;
                 }
                 isRunning = true;
-                const endTime = Date.now() + timeRemaining * 1000;
-                timerInterval = setInterval(() => {
-                    const remaining = Math.round((endTime - Date.now()) / 1000);
-                    if (remaining >= 0) {
-                        timeRemaining = remaining;
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    const endTime = Date.now() + timeRemaining * 1000;
+                    timerInterval = setInterval(() => {
+                        const remaining = Math.round((endTime - Date.now()) / 1000);
+                        if (remaining >= 0) {
+                            timeRemaining = remaining;
+                            updateTimerDisplay();
+                        } else {
+                            clearInterval(timerInterval);
+                            isRunning = false;
+                            // Notification logic will be re-added here in Phase 2
+                        }
+                    }, 1000);
+                } else { // Adaptativo
+                    startTime = Date.now() - (timeRemaining * 1000);
+                     timerInterval = setInterval(() => {
+                        timeRemaining = Math.floor((Date.now() - startTime) / 1000);
                         updateTimerDisplay();
-                    } else {
-                        clearInterval(timerInterval);
-                        isRunning = false;
-                        // Notification logic will be re-added here in Phase 2
-                    }
-                }, 1000);
+                    }, 1000);
+                }
                 updateUI();
             };
 
@@ -287,6 +327,11 @@
                 if (!isRunning) return;
                 isRunning = false;
                 clearInterval(timerInterval);
+                if(focusMethod === 'adaptativo' && mode === 'focus') {
+                    const task = tasks.adaptativo.find(t => t.id === selectedTaskId);
+                    if (task) task.focusTime = timeRemaining;
+                    resetTimer('focus');
+                }
                 updateUI();
             };
 
@@ -294,8 +339,14 @@
                 clearInterval(timerInterval);
                 isRunning = false;
                 mode = forceMode || mode;
-                timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
-                totalTime = timeRemaining;
+
+                if (focusMethod === 'pomodoro' || mode !== 'focus') {
+                    timeRemaining = (settings[`${mode}Duration`] || 25) * 60;
+                    totalTime = timeRemaining;
+                } else { // Adaptativo
+                    timeRemaining = 0;
+                    totalTime = 0;
+                }
                 updateUI();
             };
 
@@ -327,7 +378,12 @@
                     startPauseBtn.classList.add(`bg-${modeColor}-600`, `hover:bg-${modeColor}-700`);
                 }
 
-                startPauseBtn.innerHTML = `<i data-lucide="${isRunning ? 'pause' : 'play'}" class="w-8 h-8 ${!isRunning ? 'pl-1' : ''}"></i>`;
+                let btnIcon = 'play';
+                if(isRunning) {
+                    btnIcon = (focusMethod === 'adaptativo' && mode === 'focus') ? 'square' : 'pause';
+                }
+
+                startPauseBtn.innerHTML = `<i data-lucide="${btnIcon}" class="w-8 h-8 ${btnIcon === 'play' ? 'pl-1' : ''}"></i>`;
                 lucide.createIcons();
             };
 
@@ -401,15 +457,10 @@
                 const estimate = parseInt(document.getElementById('new-task-estimate').value) || 1;
                 
                 const newTask = { 
-                    id: Date.now(), 
-                    name: taskName, 
+                    id: Date.now(), name: taskName, completed: false, isEditing: false,
                     pomodoroEstimate: focusMethod === 'pomodoro' ? estimate : 0,
-                    pomodorosCompleted: 0, 
-                    internalInterruptions: 0, 
-                    externalInterruptions: 0, 
-                    focusTime: 0, 
-                    completed: false,
-                    isEditing: false
+                    pomodorosCompleted: 0, internalInterruptions: 0, 
+                    externalInterruptions: 0, focusTime: 0, 
                 };
 
                 tasks[focusMethod].push(newTask);
@@ -470,6 +521,26 @@
                 }
             };
 
+            const updateMethodToggleUI = () => {
+                const buttons = focusMethodToggle.querySelectorAll('.method-btn');
+                buttons.forEach(btn => {
+                    btn.classList.toggle('bg-blue-600', btn.dataset.method === focusMethod);
+                    btn.classList.toggle('text-white', btn.dataset.method === focusMethod);
+                    btn.classList.toggle('text-gray-400', btn.dataset.method !== focusMethod);
+                });
+                
+                const isPomodoro = focusMethod === 'pomodoro';
+                pomodoroCyclesEl.style.display = isPomodoro ? 'flex' : 'none';
+                taskEstimateContainer.style.display = isPomodoro ? 'flex' : 'none';
+                helpContentPomodoro.style.display = isPomodoro ? 'block' : 'none';
+                helpContentAdaptativo.style.display = isPomodoro ? 'none' : 'block';
+                
+                if (!isRunning) {
+                    resetTimer('focus');
+                }
+                renderTasks(); 
+            };
+
             // --- EVENT LISTENERS ---
             startPauseBtn.addEventListener('click', () => isRunning ? pauseTimer() : startTimer());
             addTaskBtn.addEventListener('click', addTask);
@@ -485,8 +556,21 @@
                 if (!isRunning) resetTimer(mode);
             });
             alertModalCloseBtn.addEventListener('click', () => hideModal(alertModalOverlay));
+            helpBtn.addEventListener('click', () => showModal(helpModalOverlay));
+            helpModalCloseBtn.addEventListener('click', () => hideModal(helpModalOverlay));
             
+            focusMethodToggle.addEventListener('click', (e) => {
+                const target = e.target.closest('.method-btn');
+                if (target && !isRunning) {
+                    focusMethod = target.dataset.method;
+                    updateMethodToggleUI();
+                } else if (isRunning) {
+                    showModal(alertModalOverlay, 'Não é possível trocar de modo enquanto o timer está rodando.');
+                }
+            });
+
             // --- INITIALIZATION ---
+            updateMethodToggleUI();
             resetTimer('focus');
         });
     </script>
