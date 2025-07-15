@@ -238,7 +238,6 @@
     </div>
     <div id="reset-confirm-modal-overlay" class="modal-overlay">
         <div class="modal-content text-center">
-            <h2 class="text-xl font-bold text-white mb-2">Zerar o Dia?</h2>
             <p id="reset-confirm-message" class="mb-6 text-gray-300">Todas as tarefas e o progresso serão apagados. As configurações e o modo de foco serão mantidos. Deseja continuar?</p>
             <div class="flex justify-center space-x-4">
                 <button id="reset-cancel-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Cancelar</button>
@@ -310,6 +309,18 @@
                 }
             }
 
+            // ### CORRECTION: Re-added the converter function ###
+            const urlBase64ToUint8Array = (base64String) => {
+                const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+                const rawData = window.atob(base64);
+                const outputArray = new Uint8Array(rawData.length);
+                for (let i = 0; i < rawData.length; ++i) {
+                    outputArray[i] = rawData.charCodeAt(i);
+                }
+                return outputArray;
+            };
+
             async function updateNotificationUI() {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                     notificationStatus.textContent = 'Não suportado';
@@ -338,9 +349,10 @@
             async function subscribeUserToPush() {
                 try {
                     const registration = await navigator.serviceWorker.ready;
+                    // ### CORRECTION: Using the converter function ###
                     const subscription = await registration.pushManager.subscribe({
                         userVisibleOnly: true,
-                        applicationServerKey: VAPID_PUBLIC_KEY
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
                     });
                     // Welcome notification logic can be re-added if needed
                 } catch (err) {
