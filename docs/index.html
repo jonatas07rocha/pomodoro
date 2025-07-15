@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="icon-192x192.png">
     <link rel="manifest" href="manifest.json">
     
-    <title>Foco Total Core</title>
+    <title>Foco Total</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -192,7 +192,7 @@
     <div id="device-shell" class="device-shell">
         <!-- CABEÇALHO -->
         <header class="flex justify-between items-center mb-4">
-            <h1 class="text-xl font-bold text-white">Foco Total <span class="text-blue-400 font-semibold">Core</span></h1>
+            <h1 class="text-xl font-bold text-white">Foco Total</h1>
             <div id="focus-method-toggle" class="flex bg-gray-900 rounded-lg p-1 text-xs font-semibold">
                 <button data-method="pomodoro" class="method-btn px-3 py-1 rounded-md transition-colors">Pomodoro</button>
                 <button data-method="adaptativo" class="method-btn px-3 py-1 rounded-md transition-colors">Adaptativo</button>
@@ -229,9 +229,9 @@
                 <h2 class="text-base font-semibold text-white mb-2">Lista de Tarefas do Dia</h2>
                 <div id="task-list" class="space-y-2 flex-grow pr-2"></div>
                 <!-- FORMULÁRIO DE ADIÇÃO DE TAREFA -->
-                <div class="flex mt-3 space-x-2 items-center bg-gray-900 p-2 rounded-lg">
-                    <input type="text" id="new-task-input" class="flex-grow bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
-                    <div id="task-estimate-container" class="flex items-center">
+                <div class="flex flex-wrap sm:flex-nowrap gap-2 mt-3 items-center bg-gray-900 p-2 rounded-lg">
+                    <input type="text" id="new-task-input" class="grow min-w-[120px] bg-gray-700 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm border-2 border-transparent focus:border-blue-500 focus:outline-none" placeholder="Adicionar nova tarefa...">
+                    <div id="task-estimate-container" class="flex items-center flex-shrink-0">
                         <label for="new-task-estimate" class="text-sm text-gray-400 mr-1 font-bold">#</label>
                         <input type="number" id="new-task-estimate" class="w-12 bg-gray-700 text-white rounded-lg p-2 text-center font-bold border-2 border-transparent focus:border-blue-500 focus:outline-none" value="1" min="1">
                     </div>
@@ -455,7 +455,7 @@
             let focusMethod = 'pomodoro';
             let deferredInstallPrompt = null;
             
-            const VAPID_PUBLIC_KEY = 'BPpKRNSvYRV48mQDN4UTV0SOD2yP4ZTn1Ahlgki-Vm87wU6U1NqY21DHuqJTmcmUQN7cJvCNrNNXjDN46szN_Iw';
+            const VAPID_PUBLIC_KEY = 'BPkpKRNSvYRV4rBnQDN4uTv0S0D2yP4zTn1Ahlgki-Vm87wU6U1NqY21DHuqJTmcmuQN7cJvcNrNNXjDN46szN_Iw';
 
 
             // --- LÓGICA DE INSTALAÇÃO DO PWA ---
@@ -541,7 +541,6 @@
                 }
             }
 
-            // ### ALTERAÇÃO 1: Notificação de boas-vindas é chamada aqui ###
             async function subscribeUserToPush() {
                 try {
                     const registration = await navigator.serviceWorker.ready;
@@ -553,7 +552,6 @@
                     console.log('Inscrição Push recebida: ', JSON.stringify(subscription));
                     saveSubscriptionLocally(subscription);
                     
-                    // Dispara a notificação de boas-vindas imediatamente após a inscrição
                     await triggerWelcomeNotification(subscription);
 
                 } catch (err) {
@@ -598,7 +596,6 @@
                 console.log('Inscrição salva localmente.');
             };
 
-            // ### ALTERAÇÃO 2: Nova função para a notificação de boas-vindas ###
             async function triggerWelcomeNotification(subscription) {
                 if (!subscription) {
                     console.log('Nenhuma inscrição para a notificação de boas-vindas.');
@@ -642,7 +639,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ subscription: subscription }), // Envia sem payload customizado, para usar o padrão
+                        body: JSON.stringify({ subscription: subscription }),
                     });
 
                     if (!response.ok) {
@@ -900,7 +897,7 @@
                     taskEl.className = `task-item bg-gray-900 p-3 rounded-lg border-2 border-transparent cursor-pointer ${task.id === selectedTaskId ? 'selected' : ''}`;
                     taskEl.dataset.id = task.id;
                     
-                    const isEditing = task.isEditing;
+                    const isEditing = task.isEditing === true;
                     
                     const pomodoroDetails = `
                         <span class="text-gray-400 font-bold flex items-center justify-center" title="Pomodoros">
@@ -925,15 +922,15 @@
                     taskEl.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div class="flex items-center min-w-0 flex-grow">
-                                <button data-complete-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-3 flex-shrink-0"><i data-lucide="square" class="w-5 h-5"></i></button>
+                                <button data-action="complete" data-id="${task.id}" class="complete-btn text-gray-400 hover:text-green-500 mr-3 flex-shrink-0"><i data-lucide="square" class="w-5 h-5"></i></button>
                                 ${isEditing 
-                                    ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none" data-edit-input-id="${id}">`
+                                    ? `<input type="text" value="${task.name}" class="task-edit-input bg-gray-800 text-white rounded px-2 py-1 text-sm flex-grow mx-2 border-2 border-blue-500 focus:outline-none" data-id="${task.id}">`
                                     : `<span class="task-name truncate text-sm">${task.name}</span>`
                                 }
                             </div>
                             <div class="flex items-center space-x-1 flex-shrink-0">
-                                <button data-edit-id="${task.id}" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md"><i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i></button>
-                                <button data-delete-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-1 rounded-md"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                <button data-action="edit" data-id="${task.id}" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md"><i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i></button>
+                                <button data-action="delete" data-id="${task.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-1 rounded-md"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </div>
                         <div class="grid ${focusMethod === 'pomodoro' ? 'grid-cols-4' : 'grid-cols-3'} gap-1 items-center mt-2 pl-8 text-xs text-center">
@@ -971,17 +968,17 @@
                 tasks[focusMethod].push(newTask);
                 newTaskInput.value = '';
                 newTaskEstimateInput.value = '1';
-                renderTasks();
 
-                const currentTasks = tasks[focusMethod];
-                if (!selectedTaskId || currentTasks.find(t => t.id === selectedTaskId)?.completed) {
+                const previousSelectedTask = tasks[focusMethod].find(t => t.id === selectedTaskId);
+                if (!selectedTaskId || (previousSelectedTask && previousSelectedTask.completed)) {
                     selectTask(newTask.id);
+                } else {
+                    renderTasks();
                 }
             };
 
             const deleteTask = (id) => {
-                const currentTasks = tasks[focusMethod];
-                tasks[focusMethod] = currentTasks.filter(task => task.id !== id);
+                tasks[focusMethod] = tasks[focusMethod].filter(task => task.id !== id);
                 if (selectedTaskId === id) {
                     const firstIncompleteTask = tasks[focusMethod].find(t => !t.completed);
                     selectedTaskId = firstIncompleteTask ? firstIncompleteTask.id : null;
@@ -1005,10 +1002,10 @@
             
             const toggleEditState = (id) => {
                 tasks[focusMethod].forEach(task => {
-                    task.isEditing = task.id === id ? !task.isEditing : false;
+                    task.isEditing = (task.id === id);
                 });
                 renderTasks();
-                const input = document.querySelector(`[data-edit-input-id="${id}"]`);
+                const input = document.querySelector(`.task-edit-input[data-id="${id}"]`);
                 if (input) {
                     input.focus();
                     input.select();
@@ -1018,7 +1015,7 @@
             const updateTaskName = (id, newName) => {
                 const task = tasks[focusMethod].find(t => t.id === id);
                 if (task) {
-                    if (newName) {
+                    if (newName.trim() !== '') {
                         task.name = newName;
                     }
                     task.isEditing = false;
@@ -1028,15 +1025,14 @@
 
             const selectTask = (id) => {
                 const task = tasks[focusMethod].find(t => t.id === id);
-                const isAnyTaskEditing = tasks[focusMethod].some(t => t.isEditing);
+                const isAnyTaskEditing = tasks[focusMethod].some(t => t.isEditing === true);
 
                 if (task && !isAnyTaskEditing) {
                     selectedTaskId = id;
                     if (!isRunning) {
                         resetTimer('focus');
-                    } else {
-                        renderTasks();
                     }
+                    renderTasks();
                 }
             };
 
@@ -1190,48 +1186,53 @@
             });
             
             taskListEl.addEventListener('click', (e) => {
-                const deleteBtn = e.target.closest('.delete-btn');
-                const completeBtn = e.target.closest('.complete-btn');
-                const editBtn = e.target.closest('.edit-btn');
-                const taskItem = e.target.closest('.task-item');
+                const target = e.target.closest('button');
+                if (!target) {
+                    const taskItem = e.target.closest('.task-item');
+                    if(taskItem) selectTask(parseInt(taskItem.dataset.id));
+                    return;
+                }
 
-                if (deleteBtn) { deleteTask(parseInt(deleteBtn.dataset.deleteId)); return; }
-                if (completeBtn) { toggleTaskCompleted(parseInt(completeBtn.dataset.completeId)); return; }
-                if (editBtn) {
-                    const id = parseInt(editBtn.dataset.editId);
+                const action = target.dataset.action;
+                const id = parseInt(target.dataset.id);
+
+                if (action === 'complete') {
+                    toggleTaskCompleted(id);
+                } else if (action === 'delete') {
+                    deleteTask(id);
+                } else if (action === 'edit') {
                     const task = tasks[focusMethod].find(t => t.id === id);
                     if (task && task.isEditing) {
-                        const input = taskListEl.querySelector(`[data-edit-input-id="${id}"]`);
+                        const input = taskListEl.querySelector(`.task-edit-input[data-id="${id}"]`);
                         if (input) updateTaskName(id, input.value.trim());
                     } else {
                         toggleEditState(id);
                     }
-                    return;
                 }
-
-                if (taskItem) { selectTask(parseInt(taskItem.dataset.id)); }
             });
 
             taskListEl.addEventListener('keyup', (e) => {
                 if (e.target.matches('.task-edit-input')) {
-                    const id = parseInt(e.target.dataset.editInputId);
+                    const id = parseInt(e.target.dataset.id);
                     if (e.key === 'Enter') {
                         updateTaskName(id, e.target.value.trim());
                     } else if (e.key === 'Escape') {
-                        toggleEditState(null);
+                        toggleEditState(null); // Exit edit mode for all
                     }
                 }
             });
 
             taskListEl.addEventListener('focusout', (e) => {
                 if (e.target.matches('.task-edit-input')) {
-                    const id = parseInt(e.target.dataset.editInputId);
+                    const id = parseInt(e.target.dataset.id);
+                    // Use a small timeout to prevent race conditions with the save button click
                     setTimeout(() => {
                         const task = tasks[focusMethod].find(t => t.id === id);
+                        // Check if the task is still in editing mode before saving
                         if (task && task.isEditing) {
                            updateTaskName(id, e.target.value.trim());
                         }
-                    }, 150);
+                    }, 200);
                 }
             });
 
