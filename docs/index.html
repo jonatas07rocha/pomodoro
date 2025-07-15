@@ -212,6 +212,7 @@
             const addTaskBtn = document.getElementById('add-task-btn');
             const taskListEl = document.getElementById('task-list');
             const currentTaskDisplay = document.getElementById('current-task-display');
+            const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
             const settingsModalOverlay = document.getElementById('settings-modal-overlay');
             const settingsSaveBtn = document.getElementById('settings-save-btn');
             const focusDurationInput = document.getElementById('focus-duration');
@@ -220,13 +221,17 @@
             const longBreakIntervalInput = document.getElementById('long-break-interval');
             const alertModalOverlay = document.getElementById('alert-modal-overlay');
             const alertModalCloseBtn = document.getElementById('alert-modal-close-btn');
+            const taskEstimateContainer = document.getElementById('task-estimate-container');
+            const internalInterruptBtn = document.getElementById('internal-interrupt-btn');
+            const externalInterruptBtn = document.getElementById('external-interrupt-btn');
+
 
             // --- APP STATE ---
             let timerInterval, isRunning = false, mode = 'focus', timeRemaining, totalTime;
             let tasks = { pomodoro: [], adaptativo: [] };
             let selectedTaskId = null, pomodoroSessionCount = 0;
             let settings = { focusDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, longBreakInterval: 4 };
-            let focusMethod = 'pomodoro'; // 'pomodoro' or 'adaptativo'
+            let focusMethod = 'pomodoro';
 
             // --- FUNCTIONS ---
             const showModal = (modalOverlay, message) => {
@@ -237,6 +242,15 @@
 
             const hideModal = (modalOverlay) => {
                 modalOverlay.classList.remove('visible');
+            };
+
+            const formatTime = (totalSeconds) => {
+                if (!totalSeconds || totalSeconds < 1) return `0m`;
+                const minutes = Math.floor(totalSeconds / 60);
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                if (hours > 0) return `${hours}h ${remainingMinutes}m`;
+                return `${minutes}m`;
             };
 
             const updateTimerDisplay = () => {
@@ -262,8 +276,8 @@
                         updateTimerDisplay();
                     } else {
                         clearInterval(timerInterval);
-                        // Notification logic will be re-added here in Phase 2
                         isRunning = false;
+                        // Notification logic will be re-added here in Phase 2
                     }
                 }, 1000);
                 updateUI();
@@ -285,10 +299,34 @@
                 updateUI();
             };
 
-            const updateUI = () => {
-                updateTimerDisplay();
+            const updateCurrentTaskDisplay = () => {
                 const task = tasks[focusMethod].find(t => t.id === selectedTaskId);
                 currentTaskDisplay.textContent = task ? task.name : 'Nenhuma tarefa selecionada';
+                
+                if (focusMethod === 'pomodoro') {
+                    pomodoroCyclesEl.innerHTML = '';
+                    if (!settings.longBreakInterval || settings.longBreakInterval <= 0) return;
+                    const cyclesToShow = pomodoroSessionCount % settings.longBreakInterval;
+                    for(let i = 0; i < settings.longBreakInterval; i++) {
+                        const icon = i < cyclesToShow ? '<i data-lucide="check-circle-2" class="text-green-500"></i>' : '<i data-lucide="circle" class="text-gray-600"></i>';
+                        pomodoroCyclesEl.innerHTML += `<span class="transition-all">${icon}</span>`;
+                    }
+                    lucide.createIcons();
+                }
+            };
+
+            const updateUI = () => {
+                updateTimerDisplay();
+                updateCurrentTaskDisplay();
+                
+                let modeColor = mode === 'focus' ? 'blue' : 'green';
+                startPauseBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'bg-green-600', 'hover:bg-green-700', 'bg-red-600', 'hover:bg-red-700');
+                if (isRunning) {
+                    startPauseBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                } else {
+                    startPauseBtn.classList.add(`bg-${modeColor}-600`, `hover:bg-${modeColor}-700`);
+                }
+
                 startPauseBtn.innerHTML = `<i data-lucide="${isRunning ? 'pause' : 'play'}" class="w-8 h-8 ${!isRunning ? 'pl-1' : ''}"></i>`;
                 lucide.createIcons();
             };
@@ -302,6 +340,27 @@
                     taskEl.className = `task-item bg-gray-900 p-3 rounded-lg border-2 border-transparent cursor-pointer ${task.id === selectedTaskId ? 'selected' : ''}`;
                     taskEl.dataset.id = task.id;
                     const isEditing = task.isEditing === true;
+
+                    const pomodoroDetails = `
+                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Pomodoros">
+                            <i data-lucide="check-circle-2" class="w-4 h-4 mr-1 text-green-500"></i>
+                            ${task.pomodorosCompleted}/${task.pomodoroEstimate}
+                        </span>`;
+
+                    const commonDetails = `
+                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Tempo de Foco Total">
+                            <i data-lucide="clock" class="w-4 h-4 mr-1 text-blue-400"></i>
+                            ${formatTime(task.focusTime)}
+                        </span>
+                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Interrupções Internas">
+                            <i data-lucide="zap-off" class="w-4 h-4 mr-1 text-gray-400"></i>
+                            ${task.internalInterruptions}
+                        </span>
+                        <span class="text-gray-400 font-bold flex items-center justify-center" title="Interrupções Externas">
+                            <i data-lucide="user-x" class="w-4 h-4 mr-1 text-gray-400"></i>
+                            ${task.externalInterruptions}
+                        </span>`;
+
                     taskEl.innerHTML = `
                         <div class="flex justify-between items-center">
                             <div class="flex items-center min-w-0 flex-grow">
@@ -315,6 +374,10 @@
                                 <button data-action="edit" class="edit-btn text-gray-500 hover:text-blue-500 transition-colors p-1 rounded-md"><i data-lucide="${isEditing ? 'save' : 'pencil'}" class="w-4 h-4"></i></button>
                                 <button data-action="delete" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-1 rounded-md"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
+                        </div>
+                        <div class="grid ${focusMethod === 'pomodoro' ? 'grid-cols-4' : 'grid-cols-3'} gap-1 items-center mt-2 pl-8 text-xs text-center">
+                            ${focusMethod === 'pomodoro' ? pomodoroDetails : ''}
+                            ${commonDetails}
                         </div>`;
                     taskListEl.appendChild(taskEl);
                 });
@@ -335,9 +398,23 @@
             const addTask = () => {
                 const taskName = newTaskInput.value.trim();
                 if (!taskName) return;
-                const newTask = { id: Date.now(), name: taskName, completed: false, isEditing: false };
+                const estimate = parseInt(document.getElementById('new-task-estimate').value) || 1;
+                
+                const newTask = { 
+                    id: Date.now(), 
+                    name: taskName, 
+                    pomodoroEstimate: focusMethod === 'pomodoro' ? estimate : 0,
+                    pomodorosCompleted: 0, 
+                    internalInterruptions: 0, 
+                    externalInterruptions: 0, 
+                    focusTime: 0, 
+                    completed: false,
+                    isEditing: false
+                };
+
                 tasks[focusMethod].push(newTask);
                 newTaskInput.value = '';
+                
                 if (!selectedTaskId || tasks[focusMethod].find(t => t.id === selectedTaskId)?.completed) {
                     selectTask(newTask.id);
                 } else {
